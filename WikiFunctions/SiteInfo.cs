@@ -166,36 +166,93 @@ public class SiteInfo : IXmlSerializable
     public bool LoadSiteInfo()
     {
         if (!LoadFromCache())
+        {
             LoadFromNetwork();
+        }
 
-        XmlDocument xd = new XmlDocument();
-
-        //Trimmed empty \n since XML parser explodes if any (even if it's quite easy to handle this error)
-        siteinfoOutput = siteinfoOutput.Trim();
-        xd.LoadXml(siteinfoOutput);
-
-        var api = xd["api"];
-
-        var query = api?["query"];
-
-        var general = query?["general"];
-        if (general == null) return false;
-
-        ArticleUrl = Host + general.GetAttribute("articlepath");
-        Language = general.GetAttribute("lang");
-        IsRightToLeft = general.HasAttribute("rtl");
-        CapitalizeFirstLetter = general.GetAttribute("case") == "first-letter";
-        MediaWikiVersion = general.GetAttribute("generator").Replace("MediaWiki ", "");
-
-        CategoryCollation = general.GetAttribute("categorycollation");
-
-        if (query["namespaces"] == null || query["namespacealiases"] == null)
+        if (!TryParseXml(siteinfoOutput, out var xd))
+        {
             return false;
+        }
+
+        if (!TryExtractGeneralInfo(xd, out var general))
+        {
+            return false;
+        }
+
+        SetGeneralProperties(general);
+
+        if (!TryLoadNamespaces(xd))
+        {
+            return false;
+        }
+
+        if (!TryLoadNamespaceAliases(xd))
+        {
+            return false;
+        }
+
+        if (!TryLoadMagicWords(xd))
+        {
+            return false;
+        }
+
+        LoadAWBTag();
+
+        return true;
+    }
+
+    private static bool TryParseXml(string xmlContent, out XmlDocument xmlDocument)
+    {
+        xmlDocument = new XmlDocument();
+
+        try
+        {
+            // Trim empty newlines as the XML parser fails to parse if any are present
+            xmlContent = xmlContent.Trim();
+            xmlDocument.LoadXml(xmlContent);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryExtractGeneralInfo(XmlDocument xmlDocument, out XmlNode general)
+    {
+        var api = xmlDocument["api"];
+        var query = api?["query"];
+        general = query?["general"];
+
+        return general != null;
+    }
+
+    private void SetGeneralProperties(XmlNode general)
+    {
+        ArticleUrl = Host + GetAttributeValue(general, "articlepath");
+        Language = GetAttributeValue(general, "lang");
+        IsRightToLeft = general.Attributes["rtl"] != null;
+        CapitalizeFirstLetter = GetAttributeValue(general, "case") == "first-letter";
+        MediaWikiVersion = GetAttributeValue(general, "generator").Replace("MediaWiki ", "");
+        CategoryCollation = GetAttributeValue(general, "categorycollation");
+    }
+
+    private static string GetAttributeValue(XmlNode node, string attributeName)
+    {
+        XmlAttribute attribute = node.Attributes[attributeName];
+        return attribute?.Value ?? string.Empty;
+    }
+
+
+    private bool TryLoadNamespaces(XmlDocument xmlDocument)
+    {
+        var query = xmlDocument["api"]["query"];
+        if (query["namespaces"] == null) return false;
 
         foreach (XmlNode xn in query["namespaces"].GetElementsByTagName("ns"))
         {
             int id = int.Parse(xn.Attributes["id"].Value, CultureInfo.InvariantCulture);
-
             if (id != 0) namespaces[id] = xn.InnerText + ":";
         }
 
@@ -204,32 +261,57 @@ public class SiteInfo : IXmlSerializable
 
         namespaceAliases = Variables.PrepareAliases(namespaces);
 
+        return true;
+    }
+
+    private bool TryLoadNamespaceAliases(XmlDocument xmlDocument)
+    {
+        var query = xmlDocument["api"]["query"];
+        if (query["namespacealiases"] == null) return false;
+
         foreach (XmlNode xn in query["namespacealiases"].GetElementsByTagName("ns"))
         {
             int id = int.Parse(xn.Attributes["id"].Value, CultureInfo.InvariantCulture);
-
             if (id != 0) namespaceAliases[id].Add(xn.InnerText);
         }
 
-        if (query["magicwords"] == null)
-            return false;
+        return true;
+    }
 
-        foreach (XmlNode xn in query["magicwords"].GetElementsByTagName("magicword"))
+    private bool TryLoadMagicWords(XmlDocument xmlDocument)
+    {
+        var query = xmlDocument["api"]["query"];
+        var magicWordsNode = query?["magicwords"];
+
+        if (magicWordsNode == null)
         {
-            List<string> alias = new List<string>();
-
-            foreach (XmlNode xin in xn["aliases"].GetElementsByTagName("alias"))
-            {
-                alias.Add(xin.InnerText);
-            }
-
-            magicWords.Add(xn.Attributes["name"].Value, alias);
+            return false;
         }
 
-        LoadAWBTag();
+        foreach (XmlNode xn in magicWordsNode.GetElementsByTagName("magicword"))
+        {
+            List<string> aliasList = new List<string>();
+            var aliasesNode = xn["aliases"];
+
+            if (aliasesNode != null)
+            {
+                foreach (XmlNode aliasNode in aliasesNode.GetElementsByTagName("alias"))
+                {
+                    aliasList.Add(aliasNode.InnerText);
+                }
+            }
+
+            var magicWordName = xn.Attributes?["name"]?.Value;
+            if (magicWordName != null)
+            {
+                magicWords[magicWordName] = aliasList;
+            }
+        }
 
         return true;
     }
+
+
 
     /// <summary>
     /// Looks to see if a tag called AWB has been defined in Special:Tags
