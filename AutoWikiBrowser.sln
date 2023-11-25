@@ -26,6 +26,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BingSearch", "Plugins\BingS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kingbotk Plugin", "Plugins\Kingbotk Plugin\Kingbotk Plugin.csproj", "{00246C07-1FA2-4596-86C3-48A37C7FEA20}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3C4A2AA0-CB2F-4609-AD7D-A73C5C6B9C0F}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -185,5 +190,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {93202B1A-943B-4935-A105-27CE2BBC839E}
 	EndGlobalSection
 EndGlobal

@@ -77,6 +77,9 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\WikiFunctions\WikiFunctions.csproj">
     </ProjectReference>
   </ItemGroup>
