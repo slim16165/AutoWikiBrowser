@@ -572,98 +572,128 @@ public class ApiEdit : IApiEdit
 
     public void Login(string username, string password, string domain)
     {
-        if (string.IsNullOrEmpty(username)) throw new ArgumentException("Username required", "username");
-        // if (string.IsNullOrEmpty(password)) throw new ArgumentException("Password required", "password");
+        ValidateCredentials(username, password);
+        InitializeLogin();
 
+        string token = GetLoginToken();
+        string loginResult = PerformLogin(username, password, domain, token);
+
+        if (string.IsNullOrEmpty(loginResult))
+        {
+            throw new LoginException(this, "Login failed");
+        }
+
+        PostLoginActions(loginResult);
+    }
+
+    private static void ValidateCredentials(string username, string password)
+    {
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentException("Username required", nameof(username));
+        // if (string.IsNullOrEmpty(password)) throw new ArgumentException("Password required", nameof(password));
+    }
+
+    private void InitializeLogin()
+    {
         Reset();
-        User = new UserInfo(); // we don't know for sure what will be our status in case of exception
+        User = new UserInfo();
         Cookies = new CookieContainer();
+    }
 
-        // first see if we can get a login token via the new MediaWiki way using action=query&meta=tokens&type=login
-        string result = HttpPost(
-            new Dictionary<string, string>
-            {
-                {"action", "query"},
-                {"meta", "tokens"},
-                {"type", "login"}
-            },
-            new Dictionary<string, string>());
+    private string GetLoginToken()
+    {
+        string result = HttpPost(new Dictionary<string, string>
+    {
+        {"action", "query"},
+        {"meta", "tokens"},
+        {"type", "login"}
+    }, new Dictionary<string, string>());
 
         Tools.WriteDebug("API::Edit meta/tokens", result);
 
-        /* Result format: <query><tokens logintoken="b0fc31b291ebf9999a8e9a4bfac8ef0456c44116+\"/></query> */
         XmlReader xr = CreateXmlReader(result);
         xr.ReadToFollowing("tokens");
-        string token = xr.GetAttribute("logintoken");
+        return xr.GetAttribute("logintoken");
+    }
 
-        // first log in. If we got a logintoken then use it, this should be our only action=login in that case
-        bool domainSet = !string.IsNullOrEmpty(domain);
+    private string PerformLogin(string username, string password, string domain, string token)
+    {
         var post = new Dictionary<string, string>
         {
             {"lgname", username},
             {"lgpassword", password},
         };
-        post.AddIfTrue(domainSet, "lgdomain", domain);
-        post.AddIfTrue(!string.IsNullOrEmpty(token), "lgtoken", token);
 
-        result = HttpPost(
-            new Dictionary<string, string>
-            {
-                {"action", "login"}
-            },
-            post
-        );
+        if (!string.IsNullOrEmpty(domain)) post["lgdomain"] = domain;
+        if (!string.IsNullOrEmpty(token)) post["lgtoken"] = token;
 
-        xr = CreateXmlReader(result);
-
+        string result = HttpPost(new Dictionary<string, string> { { "action", "login" } }, post);
         Tools.WriteDebug("API::Edit action/login", result);
 
-        // if got token from new meta/tokens way, should now be logged in
-        if(!string.IsNullOrEmpty(token))
+        XmlReader xr = CreateXmlReader(result);
+        if (string.IsNullOrEmpty(token))
+        {
+            return HandleOldLoginFlow(xr, result, post);
+        }
+        else
         {
             xr.ReadToFollowing("login");
-        }
-        else // support the old way of first action=login to be told NeedToken and given token, then second action=login sending the token
-        {
-            // if we have login section in warnings don't want to look in there for the token
-            if(result.Contains("<warnings>") && Regex.Matches(result, @"<login ").Count > 1)
+            string status = xr.GetAttribute("result");
+            if (status.Equals("Success", StringComparison.InvariantCultureIgnoreCase))
             {
-                xr.ReadToFollowing("warnings");
-                xr.ReadToFollowing("login");
+                return result;
             }
+            else
+            {
+                // Handle unsuccessful login
+                throw new LoginException(this, status + " " + result);
+            }
+        }
+    }
 
+    private string HandleOldLoginFlow(XmlReader xr, string result, Dictionary<string, string> post)
+    {
+        if (result.Contains("<warnings>") && Regex.Matches(result, @"<login ").Count > 1)
+        {
+            xr.ReadToFollowing("warnings");
             xr.ReadToFollowing("login");
+        }
 
-            var attribute = xr.GetAttribute("result");
+        xr.ReadToFollowing("login");
+        var attribute = xr.GetAttribute("result");
 
-            if (attribute != null && attribute.Equals("NeedToken", StringComparison.InvariantCultureIgnoreCase))
+        if (attribute != null && attribute.Equals("NeedToken", StringComparison.InvariantCultureIgnoreCase))
+        {
+            AdjustCookies();
+            string token = xr.GetAttribute("token");
+
+            post["lgtoken"] = token;
+            string secondResult = HttpPost(new Dictionary<string, string> { { "action", "login" } }, post);
+            Tools.WriteDebug("API::Edit action/login NeedToken", secondResult);
+
+            xr = CreateXmlReader(secondResult);
+            xr.ReadToFollowing("login");
+            string status = xr.GetAttribute("result");
+            if (status.Equals("Success", StringComparison.InvariantCultureIgnoreCase))
             {
-                AdjustCookies();
-                token = xr.GetAttribute("token");
-
-                post.Add("lgtoken", token);
-                result = HttpPost(
-                    new Dictionary<string, string> {{"action", "login"}},
-                    post
-                );
-
-                Tools.WriteDebug("API::Edit action/login NeedToken", result);
-                xr = CreateXmlReader(result);
-                xr.ReadToFollowing("login");
+                return secondResult;
+            }
+            else
+            {
+                throw new LoginException(this, status);
             }
         }
 
-        string status = xr.GetAttribute("result");
-        if (status != null && !status.Equals("Success", StringComparison.InvariantCultureIgnoreCase))
-        {
-            throw new LoginException(this, status);
-        }
+        return result; // Return the original result if the old login flow is not required
+    }
 
+    private void PostLoginActions(string result)
+    {
         CheckForErrors(result, "login");
         AdjustCookies();
-
         RefreshUserInfo();
     }
+
 
     public void Logout()
     {
