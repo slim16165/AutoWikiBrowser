@@ -582,10 +582,7 @@ public sealed class PluginManager : IAWBPlugin
             AWBForm.RemoveTabPage(KingbotkPluginTab);
 
         var plugin = p as GenericTemplatePlugin;
-        if (plugin != null)
-        {
-            plugin.Dispose();
-        }
+        plugin?.Dispose();
 
         DefaultStatusText();
     }
@@ -716,8 +713,7 @@ public sealed class PluginManager : IAWBPlugin
     private void StopButtonClickEventHandler(object sender, EventArgs e)
     {
         DefaultStatusText();
-        if (_assessmentsObject != null)
-            _assessmentsObject.Reset();
+        _assessmentsObject?.Reset();
         _pluginSettings.AWBProcessingAborted();
     }
 

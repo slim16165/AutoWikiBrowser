@@ -151,10 +151,10 @@ public class BackgroundRequest
     /// </summary>
     public void Abort()
     {
-        if (UI != null) UI.Close();
+        UI?.Close();
         UI = null;
 
-        if (BgThread != null) BgThread.Abort();
+        BgThread?.Abort();
         Wait();
         Result = null;
     }
@@ -184,7 +184,7 @@ public class BackgroundRequest
     /// </summary>
     private void InvokeOnComplete()
     {
-        if (Complete != null) Complete(this);
+        Complete?.Invoke(this);
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ public class BackgroundRequest
     /// </summary>
     private void InvokeOnError()
     {
-        if (Errored != null) Errored(this);
+        Errored?.Invoke(this);
     }
 
     /// <summary>

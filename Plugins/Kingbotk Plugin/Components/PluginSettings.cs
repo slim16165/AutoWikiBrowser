@@ -277,10 +277,7 @@ internal sealed partial class PluginSettingsControl
             set
             {
                 _tagged = value;
-                if (evTagged != null)
-                {
-                    evTagged(value);
-                }
+                evTagged?.Invoke(value);
             }
         }
 
@@ -290,10 +287,7 @@ internal sealed partial class PluginSettingsControl
             private set
             {
                 _skipped = value;
-                if (SkipMisc != null)
-                {
-                    SkipMisc(value);
-                }
+                SkipMisc?.Invoke(value);
             }
         }
 
@@ -315,10 +309,7 @@ internal sealed partial class PluginSettingsControl
             private set
             {
                 _redLinks = value;
-                if (RedLink != null)
-                {
-                    RedLink(value);
-                }
+                RedLink?.Invoke(value);
             }
         }
 
@@ -334,10 +325,7 @@ internal sealed partial class PluginSettingsControl
             set
             {
                 _skippedNoChange = value;
-                if (SkipNoChange != null)
-                {
-                    SkipNoChange(value);
-                }
+                SkipNoChange?.Invoke(value);
             }
         }
 
@@ -353,10 +341,7 @@ internal sealed partial class PluginSettingsControl
             set
             {
                 _skippedBadTag = value;
-                if (SkipBadTag != null)
-                {
-                    SkipBadTag(value);
-                }
+                SkipBadTag?.Invoke(value);
             }
         }
 
@@ -372,10 +357,7 @@ internal sealed partial class PluginSettingsControl
             set
             {
                 _skippedNamespace = value;
-                if (SkipNamespace != null)
-                {
-                    SkipNamespace(value);
-                }
+                SkipNamespace?.Invoke(value);
             }
         }
 

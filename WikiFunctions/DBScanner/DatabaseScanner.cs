@@ -292,8 +292,7 @@ public partial class DatabaseScanner : Form
         Article a = new Article(article);
         lbArticles.Items.Add(a);
 
-        if (AWBListbox != null)
-            AWBListbox.Items.Add(a);
+        AWBListbox?.Items.Add(a);
 
         Matches++;
 
@@ -342,7 +341,7 @@ public partial class DatabaseScanner : Form
 
     private void UpdateListMakerCount()
     {
-        if (LMaker != null) LMaker.UpdateNumberOfArticles();
+        LMaker?.UpdateNumberOfArticles();
     }
 
     private void RemoveDBScannerListItemsFromAWBListbox()
@@ -801,8 +800,7 @@ public partial class DatabaseScanner : Form
         {
             locked = true;
             lbArticles.BeginUpdate();
-            if (AWBListbox != null)
-                AWBListbox.BeginUpdate();
+            AWBListbox?.BeginUpdate();
         }
 
         while (Queue.Count > 0)
@@ -813,8 +811,7 @@ public partial class DatabaseScanner : Form
         if (locked)
         {
             lbArticles.EndUpdate();
-            if (AWBListbox != null)
-                AWBListbox.EndUpdate();
+            AWBListbox?.EndUpdate();
         }
 
         lblCount.Text = Matches.ToString();

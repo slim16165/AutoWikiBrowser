@@ -182,7 +182,7 @@ public static class AWBProfiles
             try
             {
                 RegistryKey key = RegistryUtils.GetWritableKey(ProfileRegistryString);
-                if (key != null) key.SetValue("TempPassword", EncryptionUtils.Encrypt(value));
+                key?.SetValue("TempPassword", EncryptionUtils.Encrypt(value));
             }
             catch { }
         }

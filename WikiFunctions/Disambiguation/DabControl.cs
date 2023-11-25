@@ -221,7 +221,7 @@ public partial class DabControl : UserControl
             txtCorrection.Text = CurrentLink;
 
             btnUnpipe.Enabled = btnFlip.Enabled = CurrentLink.Contains("|");
-            if (Changed != null) Changed(this, new EventArgs());
+            Changed?.Invoke(this, new EventArgs());
         }
         catch (Exception ex)
         {
@@ -267,18 +267,12 @@ public partial class DabControl : UserControl
         string newLink = UnpipeRegex.Replace(CurrentLink, "[[$1]]$2");
         txtCorrection.Text = txtCorrection.Text.Replace(CurrentLink, newLink);
         CurrentLink = newLink;
-        if (Changed != null)
-        {
-            Changed(this, new EventArgs());
-        }
+        Changed?.Invoke(this, new EventArgs());
     }
 
     private void txtCorrection_TextChanged(object sender, EventArgs e)
     {
-        if (Changed != null)
-        {
-            Changed(this, new EventArgs());
-        }
+        Changed?.Invoke(this, new EventArgs());
     }
 
     private void btnFlip_Click(object sender, EventArgs e)
@@ -286,6 +280,6 @@ public partial class DabControl : UserControl
         string newLink = Regex.Replace(CurrentLink, @"\[\[(.*)\|(.*)\]\]", "[[$2|$1]]");
         txtCorrection.Text = txtCorrection.Text.Replace(CurrentLink, newLink);
         CurrentLink = newLink;
-        if (Changed != null) Changed(this, new EventArgs());
+        Changed?.Invoke(this, new EventArgs());
     }
 }

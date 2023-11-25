@@ -82,8 +82,7 @@ public partial class LogControl : UserControl
             }
         }
 
-        if (LogAdded != null)
-            LogAdded(skipped, logListener);
+        LogAdded?.Invoke(skipped, logListener);
         RefreshButtonEnablement();
     }
     #endregion

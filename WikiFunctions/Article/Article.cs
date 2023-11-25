@@ -120,15 +120,9 @@ public class Article : IProcessArticleEventArgs, IComparable<Article>
         // Initialise a Log Listener and add it to a TraceManager collection
         mAWBLogListener = new AWBLogListener(Name);
 
-        if (currentTraceManager != null)
-        {
-            currentTraceManager.AddListener(whatName, mAWBLogListener);
-        }
+        currentTraceManager?.AddListener(whatName, mAWBLogListener);
 
-        if (addListener != null)
-        {
-            addListener(whatName, mAWBLogListener);
-        }
+        addListener?.Invoke(whatName, mAWBLogListener);
     }
     #endregion
 

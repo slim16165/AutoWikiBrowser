@@ -122,42 +122,42 @@ public class Session
 
     void OnOpenComplete(AsyncApiEdit sender, PageInfo pageInfo)
     {
-        if (OpenComplete != null) OpenComplete(sender, pageInfo);
+        OpenComplete?.Invoke(sender, pageInfo);
     }
 
     void OnSaveComplete(AsyncApiEdit sender, SaveInfo saveInfo)
     {
-        if (SaveComplete != null) SaveComplete(sender, saveInfo);
+        SaveComplete?.Invoke(sender, saveInfo);
     }
 
     void OnPreviewComplete(AsyncApiEdit sender, string result)
     {
-        if (PreviewComplete != null) PreviewComplete(sender, result);
+        PreviewComplete?.Invoke(sender, result);
     }
 
     void OnExceptionCaught(AsyncApiEdit sender, Exception ex)
     {
-        if (ExceptionCaught != null) ExceptionCaught(sender, ex);
+        ExceptionCaught?.Invoke(sender, ex);
     }
 
     void OnMaxlagExceeded(AsyncApiEdit sender, double maxlag, int retryAfter)
     {
-        if (MaxlagExceeded != null) MaxlagExceeded(sender, maxlag, retryAfter);
+        MaxlagExceeded?.Invoke(sender, maxlag, retryAfter);
     }
 
     void OnLoggedOff(AsyncApiEdit sender)
     {
-        if (LoggedOff != null) LoggedOff(sender);
+        LoggedOff?.Invoke(sender);
     }
 
     void OnStateChanged(AsyncApiEdit sender)
     {
-        if (StateChanged != null) StateChanged(sender);
+        StateChanged?.Invoke(sender);
     }
 
     void OnAborted(AsyncApiEdit sender)
     {
-        if (Aborted != null) Aborted(sender);
+        Aborted?.Invoke(sender);
     }
 
     #endregion

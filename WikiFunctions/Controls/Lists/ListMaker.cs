@@ -612,8 +612,7 @@ public partial class ListMaker : UserControl, IList<Article>
         private set
         {
             _status = value;
-            if (StatusTextChanged != null)
-                StatusTextChanged(null, null);
+            StatusTextChanged?.Invoke(null, null);
         }
     }
 
@@ -627,8 +626,7 @@ public partial class ListMaker : UserControl, IList<Article>
         private set
         {
             _busyStatus = value;
-            if (BusyStateChanged != null)
-                BusyStateChanged(null, null);
+            BusyStateChanged?.Invoke(null, null);
         }
     }
 
@@ -830,8 +828,7 @@ public partial class ListMaker : UserControl, IList<Article>
         if (newArticles > 0)
             UpdateNumberOfArticles();
 
-        if (ListFinished != null)
-            ListFinished(null, null);
+        ListFinished?.Invoke(null, null);
     }
 
     private Thread _listerThread;
@@ -1086,8 +1083,7 @@ public partial class ListMaker : UserControl, IList<Article>
     /// </summary>
     public void Stop()
     {
-        if (_listerThread != null)
-            _listerThread.Abort();
+        _listerThread?.Abort();
 
         StopProgressBar(-1);
     }
@@ -1108,8 +1104,7 @@ public partial class ListMaker : UserControl, IList<Article>
         lblNumOfPages.Text = lbArticles.Items.Count + " page";
         if (lbArticles.Items.Count != 1)
             lblNumOfPages.Text += "s";
-        if (NoOfArticlesChanged != null)
-            NoOfArticlesChanged(null, null);
+        NoOfArticlesChanged?.Invoke(null, null);
 
         if (sortneeded && AutoAlpha)
             AlphaSortList();
@@ -1412,8 +1407,7 @@ public partial class ListMaker : UserControl, IList<Article>
     {
         DefaultProviders.Add(provider);
 
-        if (ListProviderAdded != null)
-            ListProviderAdded(provider);
+        ListProviderAdded?.Invoke(provider);
     }
 
     /// <summary>

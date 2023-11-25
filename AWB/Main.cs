@@ -940,8 +940,7 @@ public sealed partial class MainForm : Form, IAutoWikiBrowser
                 return;
             }
 
-            if (ArticleWasRedirected != null)
-                ArticleWasRedirected(page.OriginalTitle, page.Title);
+            ArticleWasRedirected?.Invoke(page.OriginalTitle, page.Title);
 
             listMaker.ReplaceArticle(new Article(page.OriginalTitle), TheArticle);
         }
@@ -2454,8 +2453,7 @@ font-size: 150%;'>No changes</h2><p>Press the ""Skip"" button below to skip to t
         ShuttingDown = true;
 
         // TheSession can be null if AWB encounters network problems on startup
-        if (TheSession != null)
-            TheSession.Editor.Abort();
+        TheSession?.Editor.Abort();
 
         SaveRecentSettingsList();
         UsageStats.Do(true);
@@ -3564,8 +3562,7 @@ font-size: 150%;'>No changes</h2><p>Press the ""Skip"" button below to skip to t
     public event EventHandler Ticker;
     private void Timer_Tick(object sender, EventArgs e)
     {
-        if (Ticker != null)
-            Ticker(null, null);
+        Ticker?.Invoke(null, null);
 
         _seconds++;
         if (_seconds == 60)
@@ -4145,11 +4142,9 @@ font-size: 150%;'>No changes</h2><p>Press the ""Skip"" button below to skip to t
         NudgeTimer.Stop();
 
         // abort any background thread if running
-        if (RunReparseEditBoxBackground != null)
-            RunReparseEditBoxBackground.Abort();
+        RunReparseEditBoxBackground?.Abort();
 
-        if (RunProcessPageBackground != null)
-            RunProcessPageBackground.Abort();
+        RunProcessPageBackground?.Abort();
 
         UpdateButtons(null, null);
         DisableButtons();

@@ -181,8 +181,7 @@ public sealed partial class RegexTester : Form
             {
                 TextBox text = (sender as TextBox);
 
-                if (text != null)
-                    text.SelectAll();
+                text?.SelectAll();
                 break;
             }
             case (char)27:
@@ -437,8 +436,7 @@ internal class RegexRunner
 
     public void Abort()
     {
-        if (Thr != null)
-            Thr.Abort();
+        Thr?.Abort();
     }
 
     private void ThreadFunc()

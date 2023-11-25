@@ -167,9 +167,7 @@ public class ZipNameTransform : INameTransform
         get => trimPrefix_;
         set {
             trimPrefix_ = value;
-            if (trimPrefix_ != null) {
-                trimPrefix_ = trimPrefix_.ToLower();
-            }
+            trimPrefix_ = trimPrefix_?.ToLower();
         }
     }
 

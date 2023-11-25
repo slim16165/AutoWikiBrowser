@@ -731,9 +731,7 @@ sealed public class ZipExtraData : IDisposable
         _data = newData;
         SetShort(ref index, headerID);
         SetShort(ref index, addLength);
-        if ( fieldData != null ) {
-            fieldData.CopyTo(newData, index);
-        }
+        fieldData?.CopyTo(newData, index);
     }
 
     /// <summary>
@@ -952,9 +950,7 @@ sealed public class ZipExtraData : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if ( _newEntry != null ) {
-            _newEntry.Close();
-        }
+        _newEntry?.Close();
     }
 
     #endregion

@@ -480,7 +480,7 @@ public class RegExTypoFix
         }
         finally
         {
-            if (Complete != null) Complete(TypoThread);
+            Complete?.Invoke(TypoThread);
         }
     }
 

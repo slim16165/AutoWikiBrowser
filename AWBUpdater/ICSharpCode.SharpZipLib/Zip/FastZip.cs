@@ -485,10 +485,8 @@ public class FastZip
     void ProcessDirectory(object sender, DirectoryEventArgs e)
     {
         if ( !e.HasMatchingFiles && CreateEmptyDirectories ) {
-            if ( events_ != null ) {
-                events_.OnProcessDirectory(e.Name, e.HasMatchingFiles);
-            }
-				
+            events_?.OnProcessDirectory(e.Name, e.HasMatchingFiles);
+
             if ( e.ContinueRunning ) {
                 if (e.Name != sourceDirectory_) {
                     ZipEntry entry = entryFactory_.MakeDirectoryEntry(e.Name);

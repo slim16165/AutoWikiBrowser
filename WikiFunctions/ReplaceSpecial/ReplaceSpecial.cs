@@ -295,14 +295,8 @@ public partial class ReplaceSpecial : Form, IRuleControlOwner
 
         TreeNode parent = st.Parent;
 
-        if (parent != null)
-        {
-            IRule rule = (IRule)parent.Tag;
-            if (rule.Children != null)
-            {
-                rule.Children.Remove((IRule) st.Tag);
-            }
-        }
+        IRule rule = (IRule)parent?.Tag;
+        rule?.Children?.Remove((IRule) st.Tag);
 
         RulesTreeView.Nodes.Remove(st);
 

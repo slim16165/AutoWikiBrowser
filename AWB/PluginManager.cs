@@ -91,8 +91,7 @@ internal sealed partial class PluginManager : Form
             Microsoft.Win32.RegistryKey reg = Microsoft.Win32.Registry.CurrentUser.
                 CreateSubKey("Software\\AutoWikiBrowser");
 
-            if (reg != null)
-                reg.SetValue("RecentPluginLoadedLocation", _lastPluginLoadedLocation);
+            reg?.SetValue("RecentPluginLoadedLocation", _lastPluginLoadedLocation);
         }
         catch
         {

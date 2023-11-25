@@ -161,13 +161,13 @@ public class AsyncApiEdit
         switch (operation)
         {
             case "Open":
-                if (OpenComplete != null) OpenComplete(this, Page);
+                OpenComplete?.Invoke(this, Page);
                 break;
             case "Save":
-                if (SaveComplete != null) SaveComplete(this, (SaveInfo) result);
+                SaveComplete?.Invoke(this, (SaveInfo) result);
                 break;
             case "Preview":
-                if (PreviewComplete != null) PreviewComplete(this, (string) result);
+                PreviewComplete?.Invoke(this, (string) result);
                 break;
         }
     }
@@ -179,11 +179,11 @@ public class AsyncApiEdit
         if (ex is MaxlagException)
         {
             var exm = (MaxlagException) ex;
-            if (MaxlagExceeded != null) MaxlagExceeded(this, exm.Maxlag, exm.RetryAfter);
+            MaxlagExceeded?.Invoke(this, exm.Maxlag, exm.RetryAfter);
         }
         else if (ex is LoggedOffException)
         {
-            if (LoggedOff != null) LoggedOff(this);
+            LoggedOff?.Invoke(this);
         }
 
         else
@@ -192,7 +192,7 @@ public class AsyncApiEdit
 
     protected virtual void OnExceptionCaught(Exception ex)
     {
-        if (ExceptionCaught != null) ExceptionCaught(this, ex);
+        ExceptionCaught?.Invoke(this, ex);
     }
 
     #endregion
@@ -448,15 +448,13 @@ public class AsyncApiEdit
     {
         if (InCrossThreadCall) return; // otherwise we'll deadlock
 
-        if (TheThread != null)
-            TheThread.Abort();
+        TheThread?.Abort();
 
         if (TheThread != null && TheThread.ThreadState != ThreadState.Unstarted)
             TheThread.Join();
         TheThread = null; // the thread should reset this even if aborted, but let's be sure
 
-        if (Aborted != null)
-            Aborted(this);
+        Aborted?.Invoke(this);
 
         State = EditState.Aborted;
     }

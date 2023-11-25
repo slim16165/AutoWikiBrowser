@@ -211,8 +211,7 @@ public partial class ListComparer : Form
     {
         ListBoxArticle selectedListBox = ActiveControl as ListBoxArticle;
 
-        if (selectedListBox != null)
-            selectedListBox.RemoveSelected(true);
+        selectedListBox?.RemoveSelected(true);
 
         UpdateCounts();
     }

@@ -175,12 +175,10 @@ public class SiteInfo : IXmlSerializable
         xd.LoadXml(siteinfoOutput);
 
         var api = xd["api"];
-        if (api == null) return false;
 
-        var query = api["query"];
-        if (query == null) return false;
+        var query = api?["query"];
 
-        var general = query["general"];
+        var general = query?["general"];
         if (general == null) return false;
 
         ArticleUrl = Host + general.GetAttribute("articlepath");
@@ -275,9 +273,8 @@ public class SiteInfo : IXmlSerializable
         xd.LoadXml(siteinfoOutput);
 
         var api = xd["api"];
-        if (api == null) return false;
 
-        var error = api["error"];
+        var error = api?["error"];
         if (error == null) return false;
 
         var errorCode = error.GetAttribute("code");

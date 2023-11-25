@@ -88,8 +88,7 @@ public partial class EditProtectControl : UserControl
 
     private void BothListBox_SelectedIndexChanged(object sender, EventArgs e)
     {
-        if (TextBoxIndexChanged != null)
-            TextBoxIndexChanged(this, e);
+        TextBoxIndexChanged?.Invoke(this, e);
     }
 
     [Browsable(false)]

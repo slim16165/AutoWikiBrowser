@@ -821,9 +821,7 @@ public class ZipFile : IEnumerable, IDisposable
 			
         TestStatus status = new TestStatus(this);
 
-        if ( resultHandler != null ) {
-            resultHandler(status, null);
-        }
+        resultHandler?.Invoke(status, null);
 
         HeaderTest test = testData ? (HeaderTest.Header | HeaderTest.Extract) : HeaderTest.Header;
 
@@ -845,10 +843,8 @@ public class ZipFile : IEnumerable, IDisposable
                 catch(ZipException ex) {
                     status.AddError();
 
-                    if ( resultHandler != null ) {
-                        resultHandler(status,
-                            string.Format("Exception during test - '{0}'", ex.Message));
-                    }
+                    resultHandler?.Invoke(status,
+                        string.Format("Exception during test - '{0}'", ex.Message));
 
                     if ( strategy == TestStrategy.FindFirstError ) {
                         testing = false; 
@@ -884,10 +880,8 @@ public class ZipFile : IEnumerable, IDisposable
 
                     if (this[entryIndex].Crc != crc.Value) {
                         status.AddError();
-							
-                        if ( resultHandler != null ) {
-                            resultHandler(status, "CRC mismatch");
-                        }
+
+                        resultHandler?.Invoke(status, "CRC mismatch");
 
                         if ( strategy == TestStrategy.FindFirstError ) {
                             testing = false;
@@ -931,9 +925,7 @@ public class ZipFile : IEnumerable, IDisposable
         catch (Exception ex) {
             status.AddError();
 
-            if ( resultHandler != null ) {
-                resultHandler(status, string.Format("Exception during test - '{0}'", ex.Message));
-            }
+            resultHandler?.Invoke(status, string.Format("Exception during test - '{0}'", ex.Message));
         }
 
         if ( resultHandler != null ) {
@@ -4174,9 +4166,7 @@ public class DiskArchiveStorage : BaseArchiveStorage
         Stream result;
         if ((stream == null) || !stream.CanWrite)
         {
-            if (stream != null) {
-                stream.Close();
-            }
+            stream?.Close();
 
             result = new FileStream(fileName_,
                 FileMode.Open,
@@ -4195,9 +4185,7 @@ public class DiskArchiveStorage : BaseArchiveStorage
     /// </summary>
     public override void Dispose()
     {
-        if ( temporaryStream_ != null ) {
-            temporaryStream_.Close();
-        }
+        temporaryStream_?.Close();
     }
 
     #endregion
@@ -4353,9 +4341,7 @@ public class MemoryArchiveStorage : BaseArchiveStorage
     /// </summary>
     public override void Dispose()
     {
-        if ( temporaryStream_ != null ) {
-            temporaryStream_.Close();
-        }
+        temporaryStream_?.Close();
     }
 
     #endregion

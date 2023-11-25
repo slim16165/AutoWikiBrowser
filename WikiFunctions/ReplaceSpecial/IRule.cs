@@ -67,8 +67,7 @@ public abstract class IRule : ICloneable
             return;
         ForgetControl();
         old.Hide();
-        if (old.Parent != null)
-            old.Parent.Controls.Remove(old);
+        old.Parent?.Controls.Remove(old);
         old.Dispose();
     }
 

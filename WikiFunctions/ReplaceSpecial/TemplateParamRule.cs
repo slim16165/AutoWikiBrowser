@@ -62,23 +62,17 @@ public class TemplateParamRule : IRule
 
     public override void Save()
     {
-        if (ruleControl_ == null)
-            return;
-        ruleControl_.SaveToRule(this);
+        ruleControl_?.SaveToRule(this);
     }
 
     public override void Restore()
     {
-        if (ruleControl_ == null)
-            return;
-        ruleControl_.RestoreFromRule(this);
+        ruleControl_?.RestoreFromRule(this);
     }
 
     public override void SelectName()
     {
-        if (ruleControl_ == null)
-            return;
-        ruleControl_.SelectName();
+        ruleControl_?.SelectName();
     }
 
     public override string Apply(TreeNode tn, string text, string title)

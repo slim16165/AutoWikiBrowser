@@ -53,7 +53,7 @@ public partial class TypoStatsControl : NoFlickerExtendedListView
 
     public void ClearStats()
     {
-        if (Data != null) Data.Clear();
+        Data?.Clear();
         Items.Clear();
         TotalTypos = SelfMatches = FalsePositives = Saves = Pages = 0;
     }
