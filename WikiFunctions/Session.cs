@@ -605,40 +605,13 @@ namespace WikiFunctions
             }
         }
 
-        /// <summary>
-        /// Loads namespaces
-        /// </summary>
         private void LoadProjectOptions()
         {
-            string[] months = (string[])Variables.ENLangMonthNames.Clone();
-
             try
             {
-                Site = new SiteInfo(Editor.SynchronousEditor);
-
-                for (int i = 0; i < months.Length; i++)
-                {
-                    months[i] += "-gen";
-                }
-
-                // get localized month names if not en-wiki
-                if (!Variables.IsWikipediaEN)
-                {
-                    Dictionary<string, string> messages = Site.GetMessages(months);
-
-                    if (messages.Count == 12)
-                    {
-                        for (int i = 0; i < months.Length; i++)
-                        {
-                            months[i] = messages[months[i]];
-                        }
-                        Variables.MonthNames = months;
-                    }
-                }
-
-                Variables.Namespaces = Site.Namespaces;
-                Variables.NamespaceAliases = Site.NamespaceAliases;
-                Variables.MagicWords = Site.MagicWords;
+                InitializeSiteInfo();
+                UpdateMonthNamesIfNeeded();
+                StoreSiteInformation();
             }
             catch (ReadApiDeniedException)
             {
@@ -646,76 +619,80 @@ namespace WikiFunctions
             }
             catch (WebException ex)
             {
-                string message = "";
-                
-                if (ex.InnerException != null)
-                {
-                    if (ex.InnerException is AuthenticationException)
-                    {
-
-                        if (message.Equals(""))
-                        {
-                            message = ex.Message;
-                        }
-                        else
-                        {
-                            message += " " + ex.Message;
-                        }
-                    }
-
-                    if (message.Equals(""))
-                    {
-                        message = ex.InnerException.Message;
-                    }
-                    else
-                    {
-                        message += " " + ex.InnerException.Message;
-                    }
-                }
-                else
-                {
-                    var resp = (HttpWebResponse)ex.Response;
-                    if (resp == null) throw;
-
-                    // Check for HTTP 401 error.
-                    switch (resp.StatusCode)
-                    {
-                        case HttpStatusCode.Unauthorized: // 401
-                            throw;
-                    }
-                    
-                    message = ex.Message;
-                }
-
-                MessageBox.Show(message, "Error connecting to wiki", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                
-                throw;
+                HandleWebException(ex);
             }
             catch (Exception ex)
             {
-                // TODO:Better error handling
+                HandleGeneralException(ex);
+            }
+        }
 
-                string message = "";
+        private void InitializeSiteInfo()
+        {
+            Site = new SiteInfo(Editor.SynchronousEditor);
+        }
 
-                if (ex is WikiUrlException)
+        private void UpdateMonthNamesIfNeeded()
+        {
+            if (!Variables.IsWikipediaEN)
+            {
+                string[] monthGenNames = AddGenSuffixToMonthNames(Variables.ENLangMonthNames);
+                Dictionary<string, string> messages = Site.GetMessages(monthGenNames);
+                if (messages.Count == 12)
                 {
-                    if (ex.InnerException != null)
-                    {
-                        message = ex.InnerException.Message;
-                    }
+                    Variables.MonthNames = messages.Values.ToArray();
                 }
-                else
+            }
+        }
+
+        private static string[] AddGenSuffixToMonthNames(string[] months)
+        {
+            return months.Select(m => $"{m}-gen").ToArray();
+        }
+
+        private void StoreSiteInformation()
+        {
+            Variables.Namespaces = Site.Namespaces;
+            Variables.NamespaceAliases = Site.NamespaceAliases;
+            Variables.MagicWords = Site.MagicWords;
+        }
+
+        private static void HandleWebException(WebException ex)
+        {
+            string message = ConstructWebExceptionMessage(ex);
+            MessageBox.Show(message, "Error connecting to wiki", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            throw ex;
+        }
+
+        private static string ConstructWebExceptionMessage(WebException ex)
+        {
+            if (ex.Response is HttpWebResponse response)
+            {
+                if (response.StatusCode == HttpStatusCode.Unauthorized) // 401
                 {
-                    message = ex.Message;
+                    return "Unauthorized access. Please check your credentials.";
                 }
+            }
 
-                MessageBox.Show("An error occured while connecting to the server or loading project information from it. " +
-                        "Please make sure that your internet connection works and such combination of project/language exist." +
-                        "\r\nEnter the URL in the format \"en.wikipedia.org/w/\" (including path where index.php and api.php reside)." +
-                        "\r\nError description: " + message,
-                        "Error connecting to wiki", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return ex.Message;
+        }
 
-                throw;
+        private static void HandleGeneralException(Exception ex)
+        {
+            string message = ConstructGeneralExceptionMessage(ex);
+            MessageBox.Show(message, "Error connecting to wiki", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            throw ex;
+        }
+
+        private static string ConstructGeneralExceptionMessage(Exception ex)
+        {
+            if (ex is WikiUrlException wikiEx && wikiEx.InnerException != null)
+            {
+                return wikiEx.InnerException.Message;
+            }
+            else
+            {
+                return ex.Message;
             }
         }
     }
