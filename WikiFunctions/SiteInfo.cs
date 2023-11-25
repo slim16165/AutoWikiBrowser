@@ -169,6 +169,9 @@ public class SiteInfo : IXmlSerializable
             LoadFromNetwork();
 
         XmlDocument xd = new XmlDocument();
+
+        //Trimmed empty \n since XML parser explodes if any (even if it's quite easy to handle this error)
+        siteinfoOutput = siteinfoOutput.Trim();
         xd.LoadXml(siteinfoOutput);
 
         var api = xd["api"];
