@@ -45,21 +45,22 @@ namespace WikiFunctions.Plugins.ListMaker.BingSearch
             var bingContainer = new Bing.BingSearchContainer(new Uri("https://api.datamarket.azure.com/Bing/Search/"))
                 { Credentials = new NetworkCredential(AccountKey, AccountKey) };
 
-            foreach (string s in searchCriteria)
-            {
-                var searchQuery = bingContainer.Web(string.Format("{0}({1})", s, Variables.URL), null, null, null, null, null, null, null);
-                var searchResults = searchQuery.Execute();
-                if (searchResults == null)
-                {
-                    continue;
-                }
+            throw new NotImplementedException();
+            //foreach (string s in searchCriteria)
+            //{
+            //    var searchQuery = bingContainer.Web($"{s}({Variables.URL})", null, null, null, null, null, null, null);
+            //    var searchResults = searchQuery.Execute();
+            //    if (searchResults == null)
+            //    {
+            //        continue;
+            //    }
 
-                foreach (var result in searchResults)
-                {
-                    articles.Add(new Article(result.Title));
-                    Console.WriteLine(result.Title);
-                }
-            }
+            //    foreach (var result in searchResults)
+            //    {
+            //        articles.Add(new Article(result.Title));
+            //        Console.WriteLine(result.Title);
+            //    }
+            //}
 
             return articles;
         }

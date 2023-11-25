@@ -390,7 +390,7 @@ namespace WikiFunctions.API
             {
                 req.Proxy = null;
             }
-            req.UserAgent = UserAgent;
+            req.Headers["User-Agent"] = UserAgent;
             req.AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip;
 
             // SECURITY: don't send cookies to third-party sites

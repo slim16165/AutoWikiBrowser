@@ -494,7 +494,7 @@ namespace WikiFunctions
 
             if (SystemProxy != null) req.Proxy = SystemProxy;
 
-            req.UserAgent = string.IsNullOrEmpty(userAgent) ? Tools.DefaultUserAgentString : userAgent;
+            req.Headers["User-Agent"] = string.IsNullOrEmpty(userAgent) ? Tools.DefaultUserAgentString : userAgent;
 
             req.AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip;
 

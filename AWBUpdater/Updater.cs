@@ -28,7 +28,7 @@ using ICSharpCode.SharpZipLib.Zip;
 
 using System.Net;
 using System.Web;
-using System.Web.Script.Serialization;
+using System.Text.Json;
 
 namespace AWBUpdater
 {
@@ -228,21 +228,19 @@ namespace AWBUpdater
 
                 rq.Proxy = _proxy;
 
-                rq.UserAgent = string.Format("AWBUpdater/{0} ({1}; .NET CLR {2})",
+                rq.Headers["User-Agent"] = string.Format("AWBUpdater/{0} ({1}; .NET CLR {2})",
                     Assembly.GetExecutingAssembly().GetName().Version,
                     Environment.OSVersion.VersionString, Environment.Version);
 
                 HttpWebResponse response = (HttpWebResponse) rq.GetResponse();
 
-                using (Stream stream = response.GetResponseStream())
-                using (StreamReader sr = new StreamReader(stream, Encoding.UTF8))
-                {
-                    json = sr.ReadToEnd();
+                using Stream stream = response.GetResponseStream();
+                using StreamReader sr = new StreamReader(stream, Encoding.UTF8);
+                json = sr.ReadToEnd();
 
-                    sr.Close();
-                    stream.Close();
-                    response.Close();
-                }
+                sr.Close();
+                stream.Close();
+                response.Close();
             }
             catch
             {
@@ -255,8 +253,9 @@ namespace AWBUpdater
                 FileVersionInfo awbVersionInfo =
                     FileVersionInfo.GetVersionInfo(Path.Combine(_awbDirectory, "AutoWikiBrowser.exe"));
 
-                JavaScriptSerializer jss = new JavaScriptSerializer();
-                var updaterData = jss.Deserialize<RootObject>(json);
+
+                var updaterData = JsonSerializer.Deserialize<RootObject>(json);
+
 
                 string versionToUpdateAWBTo = "";
 
@@ -280,18 +279,16 @@ namespace AWBUpdater
 
                         if (newerVersions.Count > 1)
                         {
-                            using (VersionChooser chooser = new VersionChooser(newerVersions))
+                            using VersionChooser chooser = new VersionChooser(newerVersions);
+                            if (chooser.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(chooser.SelectedVersion))
                             {
-                                if (chooser.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(chooser.SelectedVersion))
-                                {
-                                    _updateStatus = UpdateStatus.OptionalUpdate;
-                                    versionToUpdateAWBTo = chooser.SelectedVersion;
-                                }
+                                _updateStatus = UpdateStatus.OptionalUpdate;
+                                versionToUpdateAWBTo = chooser.SelectedVersion;
                             }
                         } else if (newerVersions.Count == 1 &&
-                        MessageBox.Show(
-                            string.Format("There is an optional update to AutoWikiBrowser. Would you like to upgrade to {0}?", newerVersions.First().version),
-                            "Optional update", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                                   MessageBox.Show(
+                                       $"There is an optional update to AutoWikiBrowser. Would you like to upgrade to {newerVersions.First().version}?",
+                                       "Optional update", MessageBoxButtons.YesNo) == DialogResult.Yes)
                         {
                             _updateStatus = UpdateStatus.OptionalUpdate;
                             versionToUpdateAWBTo = newerVersions.First().version;

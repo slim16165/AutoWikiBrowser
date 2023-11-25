@@ -12,14 +12,26 @@
 //            the terms and conditions of the license agreement located at
 //            http://go.microsoft.com/fwlink/?LinkID=202740
 //            If you do not agree to these terms you may not use this content.
+
+using System.Net.Http;
+using System.Threading.Tasks;
+
 namespace Bing
 {
     using System;
     using System.Data.Services.Client;
+    using WikiFunctions.Properties;
 
 
     public partial class ExpandableSearchResult {
-        
+
+        private readonly HttpClient _httpClient;
+
+        public ExpandableSearchResult(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
+
         private Guid _ID;
         
         private Int64? _WebTotal;
@@ -677,8 +689,10 @@ namespace Bing
             if ((Query == null)) {
                 throw new System.ArgumentNullException("Query", "Query value cannot be null");
             }
-            DataServiceQuery<ExpandableSearchResult> query;
-            query = base.CreateQuery<ExpandableSearchResult>("Composite");
+            // Costruisci l'URL per la richiesta
+            var url = $"YourServiceUrl?Sources={Sources}&Query={Query}"; // e così via per gli altri parametri
+
+            var query = base.CreateQuery<ExpandableSearchResult>("Composite");
             if ((Sources != null)) {
                 query = query.AddQueryOption("Sources", string.Concat("\'", System.Uri.EscapeDataString(Sources), "\'"));
             }
