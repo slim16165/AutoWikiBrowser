@@ -20,22 +20,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 using System;
 using System.Windows.Forms;
 
-namespace AutoWikiBrowser
+namespace AutoWikiBrowser;
+
+internal sealed partial class ExitQuestion : Form
 {
-    internal sealed partial class ExitQuestion : Form
+    public ExitQuestion(TimeSpan time, int edits, string msg)
     {
-        public ExitQuestion(TimeSpan time, int edits, string msg)
-        {
-            InitializeComponent();
+        InitializeComponent();
 
-            lblPrompt.Text = msg + "Are you sure you want to exit?";
+        lblPrompt.Text = msg + "Are you sure you want to exit?";
 
-            lblTimeAndEdits.Text = string.Format("You made {0} edits in {1}", edits, time);
-        }
-
-        public bool CheckBoxDontAskAgain
-        {
-            get { return chkDontAskAgain.Checked; }
-        }
+        lblTimeAndEdits.Text = string.Format("You made {0} edits in {1}", edits, time);
     }
+
+    public bool CheckBoxDontAskAgain => chkDontAskAgain.Checked;
 }

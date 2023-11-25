@@ -20,31 +20,24 @@ using System.Collections.Generic;
 using WikiFunctions.Lists.Providers;
 using WikiFunctions.Plugin;
 
-namespace WikiFunctions.Plugins.ListMaker.NoLimitsPlugin
+namespace WikiFunctions.Plugins.ListMaker.NoLimitsPlugin;
+
+/// <summary>
+/// 
+/// </summary>
+public class ImageFileLinksNoLimitsListProvider : ImageFileLinksListProvider, IListMakerPlugin
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public class ImageFileLinksNoLimitsListProvider : ImageFileLinksListProvider, IListMakerPlugin
+    public ImageFileLinksNoLimitsListProvider()
     {
-        public ImageFileLinksNoLimitsListProvider()
-        {
-            Limit = 1000000;
-        }
-
-        public override List<Article> MakeList(params string[] searchCriteria)
-        {
-            return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
-        }
-
-        public override string DisplayText
-        {
-            get { return base.DisplayText + " (NL, Admin & Bot)"; }
-        }
-
-        public string Name
-        {
-            get { return "ImageFileLinksNoLimitsListProvider"; }
-        }
+        Limit = 1000000;
     }
+
+    public override List<Article> MakeList(params string[] searchCriteria)
+    {
+        return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
+    }
+
+    public override string DisplayText => base.DisplayText + " (NL, Admin & Bot)";
+
+    public string Name => "ImageFileLinksNoLimitsListProvider";
 }

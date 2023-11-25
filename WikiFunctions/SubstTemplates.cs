@@ -23,144 +23,143 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Text.RegularExpressions;
 
-namespace WikiFunctions
+namespace WikiFunctions;
+
+public partial class SubstTemplates : Form
 {
-    public partial class SubstTemplates : Form
+    public SubstTemplates()
     {
-        public SubstTemplates()
+        InitializeComponent();
+    }
+
+    private string[] LocTemplateList = new string[0];
+
+    private readonly Dictionary<Regex, string> Regexes = new Dictionary<Regex, string>();
+
+    private readonly Parse.HideText RemoveUnformatted = new Parse.HideText(true, false, true);
+
+    public string[] TemplateList
+    {
+        get => LocTemplateList;
+        set
         {
-            InitializeComponent();
+            textBoxTemplates.Lines = LocTemplateList = value;
+            textBoxTemplates.Select(0, 0);
+            RefreshRegexes();
         }
+    }
 
-        private string[] LocTemplateList = new string[0];
+    public bool ExpandRecursively
+    {
+        get => chkUseExpandTemplates.Checked;
+        set => chkUseExpandTemplates.Checked = value;
+    }
 
-        private readonly Dictionary<Regex, string> Regexes = new Dictionary<Regex, string>();
+    public bool IgnoreUnformatted
+    {
+        get => chkIgnoreUnformatted.Checked;
+        set => chkIgnoreUnformatted.Checked = value;
+    }
 
-        private readonly Parse.HideText RemoveUnformatted = new Parse.HideText(true, false, true);
+    public bool IncludeComments
+    {
+        get => chkIncludeComment.Checked;
+        set => chkIncludeComment.Checked = value;
+    }
 
-        public string[] TemplateList
-        {
-            get { return LocTemplateList; }
-            set
-            {
-                textBoxTemplates.Lines = LocTemplateList = value;
-                textBoxTemplates.Select(0, 0);
-                RefreshRegexes();
-            }
-        }
+    /// <summary>
+    /// 
+    /// </summary>
+    public void Clear()
+    {
+        LocTemplateList = new string[0];
+        Regexes.Clear();
+    }
 
-        public bool ExpandRecursively
-        {
-            get { return chkUseExpandTemplates.Checked; }
-            set { chkUseExpandTemplates.Checked = value; }
-        }
-
-        public bool IgnoreUnformatted
-        {
-            get { return chkIgnoreUnformatted.Checked; }
-            set { chkIgnoreUnformatted.Checked = value; }
-        }
-
-        public bool IncludeComments
-        {
-            get { return chkIncludeComment.Checked; }
-            set { chkIncludeComment.Checked = value; }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public void Clear()
-        {
-            LocTemplateList = new string[0];
-            Regexes.Clear();
-        }
-
-        /// <summary>
-        /// Generates regexes to match the templates from the template list.
-        /// Supports templates with Template: or Msg: at the start
-        /// Does not process nested templates
-        /// </summary>
-        private void RefreshRegexes()
-        {
-            Regexes.Clear();
+    /// <summary>
+    /// Generates regexes to match the templates from the template list.
+    /// Supports templates with Template: or Msg: at the start
+    /// Does not process nested templates
+    /// </summary>
+    private void RefreshRegexes()
+    {
+        Regexes.Clear();
             
-            // derive optional template namespace prefixes to allow
-            string templ = Variables.NamespacesCaseInsensitive[Namespace.Template];
-            if (templ[0] == '(')
-                templ = "(?:" + templ.Insert(templ.IndexOf(')'), "|[Mm]sg") + @")?\s*";
-            else
-                templ = @"(?:" + templ + @"|[Mm]sg:|)\s*";
+        // derive optional template namespace prefixes to allow
+        string templ = Variables.NamespacesCaseInsensitive[Namespace.Template];
+        if (templ[0] == '(')
+            templ = "(?:" + templ.Insert(templ.IndexOf(')'), "|[Mm]sg") + @")?\s*";
+        else
+            templ = @"(?:" + templ + @"|[Mm]sg:|)\s*";
 
-            foreach (string s in TemplateList)
-            {
-                if (string.IsNullOrEmpty(s.Trim())) 
-                    continue;
+        foreach (string s in TemplateList)
+        {
+            if (string.IsNullOrEmpty(s.Trim())) 
+                continue;
                 
-                Regexes.Add(new Regex(@"\{\{\s*" + templ + Tools.FirstLetterCaseInsensitive(Regex.Escape(s)) + @"\s*(\|[^\}]*|)}}",
-                    RegexOptions.Singleline), @"{{subst:" + s + "$1}}");
-            }
+            Regexes.Add(new Regex(@"\{\{\s*" + templ + Tools.FirstLetterCaseInsensitive(Regex.Escape(s)) + @"\s*(\|[^\}]*|)}}",
+                RegexOptions.Singleline), @"{{subst:" + s + "$1}}");
         }
+    }
 
-        private void btnClear_Click(object sender, EventArgs e)
+    private void btnClear_Click(object sender, EventArgs e)
+    {
+        textBoxTemplates.Text = "";
+    }
+
+    private void btnOk_Click(object sender, EventArgs e)
+    {
+        TemplateList = textBoxTemplates.Lines;
+        Close();
+    }
+
+    private void btnReset_Click(object sender, EventArgs e)
+    {
+        textBoxTemplates.Lines = TemplateList;
+    }
+
+    /// <summary>
+    /// Returns the number of templates in the substitution list
+    /// </summary>
+    public int NoOfRegexes => Regexes.Count;
+
+    /// <summary>
+    /// Returns whether there are any templates in the substitution list
+    /// </summary>
+    public bool HasSubstitutions => NoOfRegexes != 0;
+
+    /// <summary>
+    /// Substitutes templates in the given article text
+    /// </summary>
+    /// <param name="articleText">The wiki text of the article.</param>
+    /// <param name="articleTitle">Title of the article</param>
+    /// <returns></returns>
+    public string SubstituteTemplates(string articleText, string articleTitle)
+    {
+        if (!HasSubstitutions) 
+            return articleText; // nothing to substitute
+
+        if (chkIgnoreUnformatted.Checked)
+            articleText = RemoveUnformatted.HideUnformatted(articleText);
+
+        if (!chkUseExpandTemplates.Checked)
         {
-            textBoxTemplates.Text = "";
-        }
-
-        private void btnOk_Click(object sender, EventArgs e)
-        {
-            TemplateList = textBoxTemplates.Lines;
-            Close();
-        }
-
-        private void btnReset_Click(object sender, EventArgs e)
-        {
-            textBoxTemplates.Lines = TemplateList;
-        }
-
-        /// <summary>
-        /// Returns the number of templates in the substitution list
-        /// </summary>
-        public int NoOfRegexes { get { return Regexes.Count; } }
-
-        /// <summary>
-        /// Returns whether there are any templates in the substitution list
-        /// </summary>
-        public bool HasSubstitutions { get { return NoOfRegexes != 0; } }
-
-        /// <summary>
-        /// Substitutes templates in the given article text
-        /// </summary>
-        /// <param name="articleText">The wiki text of the article.</param>
-        /// <param name="articleTitle">Title of the article</param>
-        /// <returns></returns>
-        public string SubstituteTemplates(string articleText, string articleTitle)
-        {
-            if (!HasSubstitutions) 
-                return articleText; // nothing to substitute
-
-            if (chkIgnoreUnformatted.Checked)
-                articleText = RemoveUnformatted.HideUnformatted(articleText);
-
-            if (!chkUseExpandTemplates.Checked)
+            foreach (KeyValuePair<Regex, string> p in Regexes)
             {
-                foreach (KeyValuePair<Regex, string> p in Regexes)
-                {
-                    articleText = p.Key.Replace(articleText, p.Value);
-                }
+                articleText = p.Key.Replace(articleText, p.Value);
             }
-            else
-                articleText = Tools.ExpandTemplate(articleText, articleTitle, Regexes, chkIncludeComment.Checked);
-
-            if (chkIgnoreUnformatted.Checked)
-                articleText = RemoveUnformatted.AddBackUnformatted(articleText);
-
-            return articleText;
         }
+        else
+            articleText = Tools.ExpandTemplate(articleText, articleTitle, Regexes, chkIncludeComment.Checked);
 
-        private void chkUseExpandTemplates_CheckedChanged(object sender, EventArgs e)
-        {
-            chkIncludeComment.Enabled = chkUseExpandTemplates.Checked;
-        }
+        if (chkIgnoreUnformatted.Checked)
+            articleText = RemoveUnformatted.AddBackUnformatted(articleText);
+
+        return articleText;
+    }
+
+    private void chkUseExpandTemplates_CheckedChanged(object sender, EventArgs e)
+    {
+        chkIncludeComment.Enabled = chkUseExpandTemplates.Checked;
     }
 }

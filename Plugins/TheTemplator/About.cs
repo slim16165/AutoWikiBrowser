@@ -16,16 +16,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-namespace AutoWikiBrowser.Plugins.TheTemplator
+namespace AutoWikiBrowser.Plugins.TheTemplator;
+
+internal sealed class AboutBox : WikiFunctions.Controls.AboutBox
 {
-    internal sealed class AboutBox : WikiFunctions.Controls.AboutBox
+    protected override void Initialise()
     {
-        protected override void Initialise()
-        {
-            lblVersion.Text = "Version " + 
-                System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            textBoxDescription.Text = GPLNotice;
-            Text = "TheTemplator Plugin";
-        }
+        lblVersion.Text = "Version " + 
+                          System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        textBoxDescription.Text = GPLNotice;
+        Text = "TheTemplator Plugin";
     }
 }

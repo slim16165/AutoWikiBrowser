@@ -19,36 +19,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 using WikiFunctions.Plugin;
 using System.Windows.Forms;
 
-namespace AutoWikiBrowser
-{
-    partial class MainForm
-    {
-        CheckBox IAutoWikiBrowserForm.BotModeCheckbox { get { return chkAutoMode; } }
-        CheckBox IAutoWikiBrowserForm.SkipNoChangesCheckBox { get { return chkSkipNoChanges; } }
-        Button IAutoWikiBrowserForm.PreviewButton { get { return btnPreview; } }
-        Button IAutoWikiBrowserForm.SaveButton { get { return btnSave; } }
-        Button IAutoWikiBrowserForm.SkipButton { get { return btnIgnore; } }
-        Button IAutoWikiBrowserForm.StopButton { get { return btnStop; } }
-        Button IAutoWikiBrowserForm.DiffButton { get { return btnDiff; } }
-        Button IAutoWikiBrowserForm.StartButton { get { return btnStart; } }
-        ComboBox IAutoWikiBrowserForm.EditSummaryComboBox { get { return cmboEditSummary; } }
-        StatusStrip IAutoWikiBrowserForm.StatusStrip { get { return StatusMain; } }
-        NotifyIcon IAutoWikiBrowserForm.NotifyIcon { get { return ntfyTray; } }
-        RadioButton IAutoWikiBrowserForm.SkipNonExistentPages { get { return radSkipNonExistent; } }
-        CheckBox IAutoWikiBrowserForm.ApplyGeneralFixesCheckBox { get { return chkGeneralFixes; } }
-        CheckBox IAutoWikiBrowserForm.AutoTagCheckBox { get { return chkAutoTagger; } }
-        CheckBox IAutoWikiBrowserForm.RegexTypoFix { get { return chkRegExTypo; } }
-        bool IAutoWikiBrowserForm.PreParseMode { get { return preParseModeToolStripMenuItem.Checked; }}
-        WikiFunctions.Controls.ArticleTextBox IAutoWikiBrowserForm.EditBox { get { return txtEdit; } }
-        Form IAutoWikiBrowserForm.Form { get { return this; } }
-        ToolStripMenuItem IAutoWikiBrowserForm.HelpToolStripMenuItem { get { return helpToolStripMenuItem; } }
-        ToolStripMenuItem IAutoWikiBrowserForm.PluginsToolStripMenuItem { get { return pluginsToolStripMenuItem; } }
-        ToolStripMenuItem IAutoWikiBrowserForm.InsertTagToolStripMenuItem { get { return insertTagToolStripMenuItem; } }
-        ToolStripMenuItem IAutoWikiBrowserForm.ToolStripMenuGeneral { get { return ToolStripMenuGeneral; } }
-        WikiFunctions.Controls.Lists.ListMaker IAutoWikiBrowserForm.ListMaker { get { return listMaker; } }
-        ContextMenuStrip IAutoWikiBrowserForm.EditBoxContextMenu { get { return mnuTextBox; } }
-        WikiFunctions.Logging.LogControl IAutoWikiBrowserForm.LogControl { get { return logControl; } }
+namespace AutoWikiBrowser;
 
-        string IAutoWikiBrowserForm.StatusLabelText { get { return StatusLabelText; } set { StatusLabelText = value; } }
+partial class MainForm
+{
+    CheckBox IAutoWikiBrowserForm.BotModeCheckbox => chkAutoMode;
+    CheckBox IAutoWikiBrowserForm.SkipNoChangesCheckBox => chkSkipNoChanges;
+    Button IAutoWikiBrowserForm.PreviewButton => btnPreview;
+    Button IAutoWikiBrowserForm.SaveButton => btnSave;
+    Button IAutoWikiBrowserForm.SkipButton => btnIgnore;
+    Button IAutoWikiBrowserForm.StopButton => btnStop;
+    Button IAutoWikiBrowserForm.DiffButton => btnDiff;
+    Button IAutoWikiBrowserForm.StartButton => btnStart;
+    ComboBox IAutoWikiBrowserForm.EditSummaryComboBox => cmboEditSummary;
+    StatusStrip IAutoWikiBrowserForm.StatusStrip => StatusMain;
+    NotifyIcon IAutoWikiBrowserForm.NotifyIcon => ntfyTray;
+    RadioButton IAutoWikiBrowserForm.SkipNonExistentPages => radSkipNonExistent;
+    CheckBox IAutoWikiBrowserForm.ApplyGeneralFixesCheckBox => chkGeneralFixes;
+    CheckBox IAutoWikiBrowserForm.AutoTagCheckBox => chkAutoTagger;
+    CheckBox IAutoWikiBrowserForm.RegexTypoFix => chkRegExTypo;
+    bool IAutoWikiBrowserForm.PreParseMode => preParseModeToolStripMenuItem.Checked;
+    WikiFunctions.Controls.ArticleTextBox IAutoWikiBrowserForm.EditBox => txtEdit;
+    Form IAutoWikiBrowserForm.Form => this;
+    ToolStripMenuItem IAutoWikiBrowserForm.HelpToolStripMenuItem => helpToolStripMenuItem;
+    ToolStripMenuItem IAutoWikiBrowserForm.PluginsToolStripMenuItem => pluginsToolStripMenuItem;
+    ToolStripMenuItem IAutoWikiBrowserForm.InsertTagToolStripMenuItem => insertTagToolStripMenuItem;
+    ToolStripMenuItem IAutoWikiBrowserForm.ToolStripMenuGeneral => ToolStripMenuGeneral;
+    WikiFunctions.Controls.Lists.ListMaker IAutoWikiBrowserForm.ListMaker => listMaker;
+    ContextMenuStrip IAutoWikiBrowserForm.EditBoxContextMenu => mnuTextBox;
+    WikiFunctions.Logging.LogControl IAutoWikiBrowserForm.LogControl => logControl;
+
+    string IAutoWikiBrowserForm.StatusLabelText { get => StatusLabelText;
+        set => StatusLabelText = value;
     }
 }

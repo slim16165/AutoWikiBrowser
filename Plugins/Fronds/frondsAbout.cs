@@ -1,23 +1,22 @@
 ﻿using System;
 using System.Windows.Forms;
 
-namespace Fronds
+namespace Fronds;
+
+public partial class FrondsAbout : Form
 {
-    public partial class FrondsAbout : Form
+    public FrondsAbout()
     {
-        public FrondsAbout()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
 
-        private void btnAboutOK_Click(object sender, EventArgs e)
-        {
-            Close();
-        }
+    private void btnAboutOK_Click(object sender, EventArgs e)
+    {
+        Close();
+    }
 
-        private void FrondsAbout_Load(object sender, EventArgs e)
-        {
-            lblAbout.Text = lblAbout.Text.Replace("X.X.X.X", Fronds.CurrentVersion);
-        }
+    private void FrondsAbout_Load(object sender, EventArgs e)
+    {
+        lblAbout.Text = lblAbout.Text.Replace("X.X.X.X", Fronds.CurrentVersion);
     }
 }

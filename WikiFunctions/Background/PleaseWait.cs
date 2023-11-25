@@ -19,58 +19,57 @@ using System;
 using System.Windows.Forms;
 using System.Threading;
 
-namespace WikiFunctions.Background
+namespace WikiFunctions.Background;
+
+public partial class PleaseWait : Form
 {
-    public partial class PleaseWait : Form
+    delegate void SetTextCallback(string text);
+
+    delegate void SetProgressCallback(int completed, int total);
+
+    public Thread Worker;
+
+    public PleaseWait()
     {
-        delegate void SetTextCallback(string text);
+        InitializeComponent();
+    }
 
-        delegate void SetProgressCallback(int completed, int total);
+    private void btnCancel_Click(object sender, EventArgs e)
+    {
+        Worker.Abort();
+        Close();
+    }
 
-        public Thread Worker;
-
-        public PleaseWait()
+    private void SetStatus(string status)
+    {
+        if (lblStatus.InvokeRequired)
         {
-            InitializeComponent();
+            SetTextCallback d = SetStatus;
+            Invoke(d, new object[] { status });
         }
+        else
+            lblStatus.Text = status;
+    }
 
-        private void btnCancel_Click(object sender, EventArgs e)
+    public string Status
+    {
+        get => lblStatus.Text;
+        set => SetStatus(value);
+    }
+
+    public void SetProgress(int completed, int total)
+    {
+        if (Progress.InvokeRequired)
         {
-            Worker.Abort();
-            Close();
+            SetProgressCallback d = SetProgress;
+            Invoke(d, new object[] { completed, total });
         }
-
-        private void SetStatus(string status)
+        else
         {
-            if (lblStatus.InvokeRequired)
-            {
-                SetTextCallback d = SetStatus;
-                Invoke(d, new object[] { status });
-            }
-            else
-                lblStatus.Text = status;
-        }
+            Progress.Maximum = total;
+            Progress.Value = completed;
 
-        public string Status
-        {
-            get { return lblStatus.Text; }
-            set { SetStatus(value); }
-        }
-
-        public void SetProgress(int completed, int total)
-        {
-            if (Progress.InvokeRequired)
-            {
-                SetProgressCallback d = SetProgress;
-                Invoke(d, new object[] { completed, total });
-            }
-            else
-            {
-                Progress.Maximum = total;
-                Progress.Value = completed;
-
-                groupBox.Text = string.Format("{0}/{1} complete", completed, total);
-            }
+            groupBox.Text = string.Format("{0}/{1} complete", completed, total);
         }
     }
 }

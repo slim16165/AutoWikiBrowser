@@ -1,28 +1,27 @@
 ﻿using System.Windows.Forms;
 
-namespace AutoWikiBrowser.Plugins.TheTemplator
+namespace AutoWikiBrowser.Plugins.TheTemplator;
+
+public partial class TemplatorParameterDetails : Form
 {
-    public partial class TemplatorParameterDetails : Form
+    public TemplatorParameterDetails()
     {
-        public TemplatorParameterDetails()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
 
-        public TemplatorParameterDetails(string param, string regex)
-        {
-            InitializeComponent();
-            paramName.Text = param;
-            paramRegex.Text = regex;
-        }
+    public TemplatorParameterDetails(string param, string regex)
+    {
+        InitializeComponent();
+        paramName.Text = param;
+        paramRegex.Text = regex;
+    }
 
-        public string ParamName { get { return paramName.Text; } }
-        public string ParamRegex { get { return paramRegex.Text; } }
+    public string ParamName => paramName.Text;
+    public string ParamRegex => paramRegex.Text;
 
-        private void regexHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            regexHelp.LinkVisited = true;
-            WikiFunctions.Tools.OpenURLInBrowser("http://msdn.microsoft.com/en-us/library/hs600312.aspx");
-        }
+    private void regexHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+    {
+        regexHelp.LinkVisited = true;
+        WikiFunctions.Tools.OpenURLInBrowser("http://msdn.microsoft.com/en-us/library/hs600312.aspx");
     }
 }

@@ -20,85 +20,66 @@ using System.Collections.Generic;
 using WikiFunctions.Lists.Providers;
 using WikiFunctions.Plugin;
 
-namespace WikiFunctions.Plugins.ListMaker.NoLimitsPlugin
+namespace WikiFunctions.Plugins.ListMaker.NoLimitsPlugin;
+
+/// <summary>
+/// Category list getter with no limits for admin and bot users (wont work for non admin/bots)
+/// </summary>
+public class CategoryNoLimitsForAdminAndBotsPlugin : CategoryListProvider, IListMakerPlugin
 {
-    /// <summary>
-    /// Category list getter with no limits for admin and bot users (wont work for non admin/bots)
-    /// </summary>
-    public class CategoryNoLimitsForAdminAndBotsPlugin : CategoryListProvider, IListMakerPlugin
+    public CategoryNoLimitsForAdminAndBotsPlugin()
     {
-        public CategoryNoLimitsForAdminAndBotsPlugin()
-        {
-            Limit = 1000000;
-        }
-
-        public override List<Article> MakeList(params string[] searchCriteria)
-        {
-            return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
-        }
-
-        public override string DisplayText
-        {
-            get { return base.DisplayText + " (NL, Admin & Bot)"; }
-        }
-
-        public string Name
-        {
-            get { return "CategoryNoLimitsForAdminAndBotsPlugin"; }
-        }
+        Limit = 1000000;
     }
 
-    /// <summary>
-    /// Recursive category list getter with no limits for admin and bot users (wont work for non admin/bots)
-    /// </summary>
-    public class CategoryRecursiveNoLimitsForAdminAndBotsPlugin : CategoryRecursiveListProvider, IListMakerPlugin
+    public override List<Article> MakeList(params string[] searchCriteria)
     {
-        public CategoryRecursiveNoLimitsForAdminAndBotsPlugin()
-        {
-            Limit = 1000000;
-            Depth = 1000;
-        }
-
-        public override List<Article> MakeList(params string[] searchCriteria)
-        {
-            return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
-        }
-
-        public override string DisplayText
-        {
-            get { return base.DisplayText + " (NL, Admin & Bot, recursive)"; }
-        }
-
-        public string Name
-        {
-            get { return "CategoryRecursiveNoLimitsForAdminAndBotsPlugin"; }
-        }
+        return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    public class CategoryRecursiveNoLimitUserDefinedLevelListProvider : CategoryRecursiveUserDefinedLevelListProvider,
-                                                                        IListMakerPlugin
+    public override string DisplayText => base.DisplayText + " (NL, Admin & Bot)";
+
+    public string Name => "CategoryNoLimitsForAdminAndBotsPlugin";
+}
+
+/// <summary>
+/// Recursive category list getter with no limits for admin and bot users (wont work for non admin/bots)
+/// </summary>
+public class CategoryRecursiveNoLimitsForAdminAndBotsPlugin : CategoryRecursiveListProvider, IListMakerPlugin
+{
+    public CategoryRecursiveNoLimitsForAdminAndBotsPlugin()
     {
-        public CategoryRecursiveNoLimitUserDefinedLevelListProvider()
-        {
-            Limit = 1000000;
-        }
-
-        public override List<Article> MakeList(params string[] searchCriteria)
-        {
-            return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
-        }
-
-        public override string DisplayText
-        {
-            get { return base.DisplayText + " (NL, Admin & Bot)"; }
-        }
-
-        public string Name
-        {
-            get { return "CategoryRecursiveNoLimitUserDefinedLevelListProvider"; }
-        }
+        Limit = 1000000;
+        Depth = 1000;
     }
+
+    public override List<Article> MakeList(params string[] searchCriteria)
+    {
+        return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
+    }
+
+    public override string DisplayText => base.DisplayText + " (NL, Admin & Bot, recursive)";
+
+    public string Name => "CategoryRecursiveNoLimitsForAdminAndBotsPlugin";
+}
+
+/// <summary>
+/// 
+/// </summary>
+public class CategoryRecursiveNoLimitUserDefinedLevelListProvider : CategoryRecursiveUserDefinedLevelListProvider,
+    IListMakerPlugin
+{
+    public CategoryRecursiveNoLimitUserDefinedLevelListProvider()
+    {
+        Limit = 1000000;
+    }
+
+    public override List<Article> MakeList(params string[] searchCriteria)
+    {
+        return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
+    }
+
+    public override string DisplayText => base.DisplayText + " (NL, Admin & Bot)";
+
+    public string Name => "CategoryRecursiveNoLimitUserDefinedLevelListProvider";
 }

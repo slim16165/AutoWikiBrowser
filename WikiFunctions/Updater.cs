@@ -25,157 +25,156 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace WikiFunctions
+namespace WikiFunctions;
+
+public static class Updater
 {
-    public static class Updater
+    private static readonly string AWBDirectory;
+
+    /// <summary>
+    /// Runs Update() at creation time
+    /// </summary>
+    static Updater()
     {
-        private static readonly string AWBDirectory;
+        AWBDirectory = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
+        Result = AWBEnabledStatus.None;
+        NewerVersions = new List<string>();
+    }
 
-        /// <summary>
-        /// Runs Update() at creation time
-        /// </summary>
-        static Updater()
+    /// <summary>
+    /// Available Enabled statuses for AWB
+    /// </summary>
+    [Flags]
+    public enum AWBEnabledStatus
+    {
+        None = 0,
+        Error = 1,
+        Disabled = 2,
+        Enabled = 4,
+        UpdaterUpdate = 8,
+        OptionalUpdate = 16,
+    }
+
+    /// <summary>
+    /// Last AWBEnabledStatus Result from Checkpage Check
+    /// </summary>
+    public static AWBEnabledStatus Result { get; private set; }
+
+    /// <summary>
+    /// Text (JSON) of the Current AWB Global Checkpage (en.wp)
+    /// </summary>
+    public static string GlobalVersionPage { get; private set; }
+
+    /// <summary>
+    /// Gets the list of versions of AWB newer than the current version
+    /// </summary>
+    /// <value>The newer versions.</value>
+    public static List<string> NewerVersions { get; private set; }
+
+    /// <summary>
+    /// Do the actual checking for enabledness etc
+    /// </summary>
+    private static void UpdateFunc()
+    {
+        try
         {
-            AWBDirectory = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
-            Result = AWBEnabledStatus.None;
-            NewerVersions = new List<string>();
-        }
+            string text =
+                Tools.GetHTML(
+                    "https://en.wikipedia.org/w/index.php?title=Wikipedia:AutoWikiBrowser/CheckPage/VersionJSON&action=raw");
+            GlobalVersionPage = text;
 
-        /// <summary>
-        /// Available Enabled statuses for AWB
-        /// </summary>
-        [Flags]
-        public enum AWBEnabledStatus
-        {
-            None = 0,
-            Error = 1,
-            Disabled = 2,
-            Enabled = 4,
-            UpdaterUpdate = 8,
-            OptionalUpdate = 16,
-        }
+            var json = JObject.Parse(text);
 
-        /// <summary>
-        /// Last AWBEnabledStatus Result from Checkpage Check
-        /// </summary>
-        public static AWBEnabledStatus Result { get; private set; }
+            Result = AWBEnabledStatus.Disabled; // Disabled till proven enabled
 
-        /// <summary>
-        /// Text (JSON) of the Current AWB Global Checkpage (en.wp)
-        /// </summary>
-        public static string GlobalVersionPage { get; private set; }
+            var definition = new { version = "", releasedate = "", dotnetversion = "", dev = false };
+            var enabledVersions = (from v in json["enabledversions"] select JsonConvert.DeserializeAnonymousType(v.ToString(), definition)).ToList();
 
-        /// <summary>
-        /// Gets the list of versions of AWB newer than the current version
-        /// </summary>
-        /// <value>The newer versions.</value>
-        public static List<string> NewerVersions { get; private set; }
+            string updaterVersion = json["updaterversion"].ToString();
 
-        /// <summary>
-        /// Do the actual checking for enabledness etc
-        /// </summary>
-        private static void UpdateFunc()
-        {
-            try
+            FileVersionInfo awbVersionInfo =
+                FileVersionInfo.GetVersionInfo(AWBDirectory + "AutoWikiBrowser.exe");
+
+            if (enabledVersions.Any(v => v.version == awbVersionInfo.FileVersion))
             {
-                string text =
-                    Tools.GetHTML(
-                        "https://en.wikipedia.org/w/index.php?title=Wikipedia:AutoWikiBrowser/CheckPage/VersionJSON&action=raw");
-                GlobalVersionPage = text;
-
-                var json = JObject.Parse(text);
-
-                Result = AWBEnabledStatus.Disabled; // Disabled till proven enabled
-
-                var definition = new { version = "", releasedate = "", dotnetversion = "", dev = false };
-                var enabledVersions = (from v in json["enabledversions"] select JsonConvert.DeserializeAnonymousType(v.ToString(), definition)).ToList();
-
-                string updaterVersion = json["updaterversion"].ToString();
-
-                FileVersionInfo awbVersionInfo =
-                    FileVersionInfo.GetVersionInfo(AWBDirectory + "AutoWikiBrowser.exe");
-
-                if (enabledVersions.Any(v => v.version == awbVersionInfo.FileVersion))
-                {
-                    Result = AWBEnabledStatus.Enabled;
-                }
-
-                string updaterFileVersion = FileVersionInfo.GetVersionInfo(AWBDirectory + "AWBUpdater.exe").FileVersion;
-
-                if (Version.Parse(updaterFileVersion) < Version.Parse(updaterVersion))
-                {
-                    Result |= AWBEnabledStatus.UpdaterUpdate;
-                }
-
-                if ((Result & AWBEnabledStatus.Disabled) == AWBEnabledStatus.Disabled)
-                {
-                    // If it's disabled, updates aren't optional!
-                    return;
-                }
-
-                var awbVersionParsed = Version.Parse(awbVersionInfo.FileVersion);
-
-                var newerVersions = enabledVersions.Where(v => !v.dev && (Version.Parse(v.version) > awbVersionParsed)).Select(v => v.version);
-                // Dev versions aren't optional updates
-                if (newerVersions.Any())
-                {
-                    NewerVersions.AddRange(newerVersions.ToArray());
-                    Result |= AWBEnabledStatus.OptionalUpdate;
-                }
+                Result = AWBEnabledStatus.Enabled;
             }
-            catch
+
+            string updaterFileVersion = FileVersionInfo.GetVersionInfo(AWBDirectory + "AWBUpdater.exe").FileVersion;
+
+            if (Version.Parse(updaterFileVersion) < Version.Parse(updaterVersion))
             {
-                Result = AWBEnabledStatus.Error;
+                Result |= AWBEnabledStatus.UpdaterUpdate;
             }
-        }
 
-        private static BackgroundRequest _request;
-
-        /// <summary>
-        /// Checks to see if AWBUpdater.exe.new exists, if it does, replace it.
-        /// </summary>
-        public static void UpdateUpdaterFile()
-        {
-            if (File.Exists(AWBDirectory + "AWBUpdater.exe.new"))
+            if ((Result & AWBEnabledStatus.Disabled) == AWBEnabledStatus.Disabled)
             {
-                File.Copy(AWBDirectory + "AWBUpdater.exe.new", AWBDirectory + "AWBUpdater.exe", true);
-                File.Delete(AWBDirectory + "AWBUpdater.exe.new");
-            }
-        }
-
-        /// <summary>
-        /// Background request to check enabled state of AWB
-        /// </summary>
-        public static void CheckForUpdates()
-        {
-            if (_request != null)
-            {
+                // If it's disabled, updates aren't optional!
                 return;
             }
 
-            _request = new BackgroundRequest();
-            _request.Execute(UpdateFunc);
-        }
+            var awbVersionParsed = Version.Parse(awbVersionInfo.FileVersion);
 
-        /// <summary>
-        /// Waits for background enabled check to complete
-        /// </summary>
-        public static void WaitForCompletion()
-        {
-            if (_request == null)
+            var newerVersions = enabledVersions.Where(v => !v.dev && (Version.Parse(v.version) > awbVersionParsed)).Select(v => v.version);
+            // Dev versions aren't optional updates
+            if (newerVersions.Any())
             {
-                return;
+                NewerVersions.AddRange(newerVersions.ToArray());
+                Result |= AWBEnabledStatus.OptionalUpdate;
             }
-            _request.Wait();
-            _request = null;
+        }
+        catch
+        {
+            Result = AWBEnabledStatus.Error;
+        }
+    }
+
+    private static BackgroundRequest _request;
+
+    /// <summary>
+    /// Checks to see if AWBUpdater.exe.new exists, if it does, replace it.
+    /// </summary>
+    public static void UpdateUpdaterFile()
+    {
+        if (File.Exists(AWBDirectory + "AWBUpdater.exe.new"))
+        {
+            File.Copy(AWBDirectory + "AWBUpdater.exe.new", AWBDirectory + "AWBUpdater.exe", true);
+            File.Delete(AWBDirectory + "AWBUpdater.exe.new");
+        }
+    }
+
+    /// <summary>
+    /// Background request to check enabled state of AWB
+    /// </summary>
+    public static void CheckForUpdates()
+    {
+        if (_request != null)
+        {
+            return;
         }
 
-        /// <summary>
-        /// Runs the Updater program
-        /// </summary>
-        public static void RunUpdater()
+        _request = new BackgroundRequest();
+        _request.Execute(UpdateFunc);
+    }
+
+    /// <summary>
+    /// Waits for background enabled check to complete
+    /// </summary>
+    public static void WaitForCompletion()
+    {
+        if (_request == null)
         {
-            Process.Start(AWBDirectory + "AWBUpdater.exe");
+            return;
         }
+        _request.Wait();
+        _request = null;
+    }
+
+    /// <summary>
+    /// Runs the Updater program
+    /// </summary>
+    public static void RunUpdater()
+    {
+        Process.Start(AWBDirectory + "AWBUpdater.exe");
     }
 }

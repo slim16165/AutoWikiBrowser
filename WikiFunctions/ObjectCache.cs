@@ -126,14 +126,8 @@ namespace WikiFunctions
         /// <returns></returns>
         public object this[string key]
         {
-            set
-            {
-                Set(key, value);
-            }
-            get
-            {
-                return Get<object>(key);
-            }
+            set => Set(key, value);
+            get => Get<object>(key);
         }
 
         /// <summary>

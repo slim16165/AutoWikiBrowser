@@ -20,49 +20,44 @@ using System.Collections.Generic;
 using WikiFunctions.Lists.Providers;
 using WikiFunctions.Plugin;
 
-namespace WikiFunctions.Plugins.ListMaker.NoLimitsPlugin
+namespace WikiFunctions.Plugins.ListMaker.NoLimitsPlugin;
+
+/// <summary>
+/// What transcludes page list getter with no limits for admin and bot users (wont work for non admin/bots)
+/// </summary>
+public class WhatTranscludesPageNoLimitsForAdminAndBotsPlugin : WhatTranscludesPageListProvider, IListMakerPlugin
 {
-    /// <summary>
-    /// What transcludes page list getter with no limits for admin and bot users (wont work for non admin/bots)
-    /// </summary>
-    public class WhatTranscludesPageNoLimitsForAdminAndBotsPlugin : WhatTranscludesPageListProvider, IListMakerPlugin
+    public WhatTranscludesPageNoLimitsForAdminAndBotsPlugin()
     {
-        public WhatTranscludesPageNoLimitsForAdminAndBotsPlugin()
-        {
-            Limit = 1000000;
-        }
-
-        public override List<Article> MakeList(params string[] searchCriteria)
-        {
-            return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
-        }
-
-        public override string DisplayText
-        { get { return base.DisplayText + " (NL, Admin & Bot)"; } }
-
-        public string Name
-        { get { return "WhatTranscludesPageNoLimitsForAdminAndBotsPlugin"; } }
+        Limit = 1000000;
     }
 
-    /// <summary>
-    /// What transcludes page (in all namespaces) list getter with no limits for admin and bot users (wont work for non admin/bots)
-    /// </summary>
-    public class WhatTranscludesPageAllNSNoLimitsForAdminAndBotsPagePlugin : WhatTranscludesPageAllNSListProvider, IListMakerPlugin
+    public override List<Article> MakeList(params string[] searchCriteria)
     {
-        public WhatTranscludesPageAllNSNoLimitsForAdminAndBotsPagePlugin()
-        {
-            Limit = 1000000;
-        }
-
-        public override List<Article> MakeList(params string[] searchCriteria)
-        {
-            return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
-        }
-
-        public override string DisplayText
-        { get { return base.DisplayText + " (NL, Admin & Bot)"; } }
-
-        public string Name
-        { get { return "WhatTranscludesPageAllNSNoLimitsForAdminAndBotsPagePlugin"; } }
+        return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
     }
+
+    public override string DisplayText => base.DisplayText + " (NL, Admin & Bot)";
+
+    public string Name => "WhatTranscludesPageNoLimitsForAdminAndBotsPlugin";
+}
+
+/// <summary>
+/// What transcludes page (in all namespaces) list getter with no limits for admin and bot users (wont work for non admin/bots)
+/// </summary>
+public class WhatTranscludesPageAllNSNoLimitsForAdminAndBotsPagePlugin : WhatTranscludesPageAllNSListProvider, IListMakerPlugin
+{
+    public WhatTranscludesPageAllNSNoLimitsForAdminAndBotsPagePlugin()
+    {
+        Limit = 1000000;
+    }
+
+    public override List<Article> MakeList(params string[] searchCriteria)
+    {
+        return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
+    }
+
+    public override string DisplayText => base.DisplayText + " (NL, Admin & Bot)";
+
+    public string Name => "WhatTranscludesPageAllNSNoLimitsForAdminAndBotsPagePlugin";
 }

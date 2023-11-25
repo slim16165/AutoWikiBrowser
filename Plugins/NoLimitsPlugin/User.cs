@@ -20,53 +20,44 @@ using System.Collections.Generic;
 using WikiFunctions.Lists.Providers;
 using WikiFunctions.Plugin;
 
-namespace WikiFunctions.Plugins.ListMaker.NoLimitsPlugin
+namespace WikiFunctions.Plugins.ListMaker.NoLimitsPlugin;
+
+/// <summary>
+/// User contrib list getter with "no limits" for admin and bot users (wont work for non admin/bots)
+/// </summary>
+public class UserContribsNoLimitsForAdminAndBotsPlugin : UserContribsListProvider, IListMakerPlugin
 {
-    /// <summary>
-    /// User contrib list getter with "no limits" for admin and bot users (wont work for non admin/bots)
-    /// </summary>
-    public class UserContribsNoLimitsForAdminAndBotsPlugin : UserContribsListProvider, IListMakerPlugin
+    public UserContribsNoLimitsForAdminAndBotsPlugin()
     {
-        public UserContribsNoLimitsForAdminAndBotsPlugin()
-        {
-            Limit = 1000000;
-        }
-
-        public override List<Article> MakeList(params string[] searchCriteria)
-        {
-            return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
-        }
-
-        public override string DisplayText
-        { get { return base.DisplayText + " (NL, Admin & Bot)"; } }
-
-        public string Name
-        {
-            get { return "UserContribsNoLimitsForAdminAndBotsPlugin"; }
-        }
+        Limit = 1000000;
     }
 
-    /// <summary>
-    /// User contrib list getter with user set limits for admin and bot users (wont work for non admin/bots)
-    /// </summary>
-    public class UserContribsUserDefinedNumberForAdminAndBotsPlugin : UserContribUserDefinedNumberListProvider, IListMakerPlugin
+    public override List<Article> MakeList(params string[] searchCriteria)
     {
-        public UserContribsUserDefinedNumberForAdminAndBotsPlugin()
-        {
-            UpperLimit = 1000000;
-        }
-
-        public override List<Article> MakeList(params string[] searchCriteria)
-        {
-            return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
-        }
-
-        public override string DisplayText
-        { get { return base.DisplayText + " (NL, Admin & Bot)"; } }
-
-        public string Name
-        {
-            get { return "UserContribsUserDefinedNumberForAdminAndBotsPlugin"; }
-        }
+        return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
     }
+
+    public override string DisplayText => base.DisplayText + " (NL, Admin & Bot)";
+
+    public string Name => "UserContribsNoLimitsForAdminAndBotsPlugin";
+}
+
+/// <summary>
+/// User contrib list getter with user set limits for admin and bot users (wont work for non admin/bots)
+/// </summary>
+public class UserContribsUserDefinedNumberForAdminAndBotsPlugin : UserContribUserDefinedNumberListProvider, IListMakerPlugin
+{
+    public UserContribsUserDefinedNumberForAdminAndBotsPlugin()
+    {
+        UpperLimit = 1000000;
+    }
+
+    public override List<Article> MakeList(params string[] searchCriteria)
+    {
+        return Base.CanUsePlugin() ? base.MakeList(searchCriteria) : null;
+    }
+
+    public override string DisplayText => base.DisplayText + " (NL, Admin & Bot)";
+
+    public string Name => "UserContribsUserDefinedNumberForAdminAndBotsPlugin";
 }

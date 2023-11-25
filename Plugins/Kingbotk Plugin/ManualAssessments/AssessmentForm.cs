@@ -13,68 +13,67 @@ You should have received a copy of the GNU General Public License Version 2 alon
 using System;
 using System.Windows.Forms;
 
-namespace AutoWikiBrowser.Plugins.Kingbotk.ManualAssessments
+namespace AutoWikiBrowser.Plugins.Kingbotk.ManualAssessments;
+
+internal sealed partial class AssessmentForm
 {
-    internal sealed partial class AssessmentForm
+    internal static void AllowOnlyOneCheckedItem(object sender, ItemCheckEventArgs e)
     {
-        internal static void AllowOnlyOneCheckedItem(object sender, ItemCheckEventArgs e)
-        {
-            CheckedListBox listBox = (CheckedListBox) sender;
+        CheckedListBox listBox = (CheckedListBox) sender;
 
-            if (e.NewValue == CheckState.Checked)
+        if (e.NewValue == CheckState.Checked)
+        {
+            foreach (int i in listBox.CheckedIndices)
             {
-                foreach (int i in listBox.CheckedIndices)
-                {
-                    listBox.SetItemChecked(i, false);
-                }
+                listBox.SetItemChecked(i, false);
             }
         }
+    }
 
-        internal DialogResult ShowDialog(out Classification classification, out Importance importance, out bool infobox,
-            out bool attention, out bool needsPhoto, string title)
+    internal DialogResult ShowDialog(out Classification classification, out Importance importance, out bool infobox,
+        out bool attention, out bool needsPhoto, string title)
+    {
+        Text += ": " + title;
+
+        var ret = ShowDialog();
+        if (ClassCheckedListBox.SelectedIndices.Count == 0)
         {
-            Text += ": " + title;
-
-            var ret = ShowDialog();
-            if (ClassCheckedListBox.SelectedIndices.Count == 0)
-            {
-                classification = Classification.Unassessed;
-            }
-            else
-            {
-                classification = (Classification) ClassCheckedListBox.SelectedIndex;
-            }
-
-            if (ImportanceCheckedListBox.SelectedIndices.Count == 0)
-            {
-                importance = Importance.Unassessed;
-            }
-            else
-            {
-                importance = (Importance) ImportanceCheckedListBox.SelectedIndex;
-            }
-
-            infobox = (SettingsCheckedListBox.GetItemCheckState(0) == CheckState.Checked);
-            attention = (SettingsCheckedListBox.GetItemCheckState(1) == CheckState.Checked);
-            needsPhoto = (SettingsCheckedListBox.GetItemCheckState(2) == CheckState.Checked);
-
-            return ret;
+            classification = Classification.Unassessed;
+        }
+        else
+        {
+            classification = (Classification) ClassCheckedListBox.SelectedIndex;
         }
 
-        // Button event handlers:
-        private void OK_Button_Click(object sender, EventArgs e)
+        if (ImportanceCheckedListBox.SelectedIndices.Count == 0)
         {
-            Close();
+            importance = Importance.Unassessed;
+        }
+        else
+        {
+            importance = (Importance) ImportanceCheckedListBox.SelectedIndex;
         }
 
-        private void Cancel_Button_Click(object sender, EventArgs e)
-        {
-            Close();
-        }
+        infobox = (SettingsCheckedListBox.GetItemCheckState(0) == CheckState.Checked);
+        attention = (SettingsCheckedListBox.GetItemCheckState(1) == CheckState.Checked);
+        needsPhoto = (SettingsCheckedListBox.GetItemCheckState(2) == CheckState.Checked);
 
-        public AssessmentForm()
-        {
-            InitializeComponent();
-        }
+        return ret;
+    }
+
+    // Button event handlers:
+    private void OK_Button_Click(object sender, EventArgs e)
+    {
+        Close();
+    }
+
+    private void Cancel_Button_Click(object sender, EventArgs e)
+    {
+        Close();
+    }
+
+    public AssessmentForm()
+    {
+        InitializeComponent();
     }
 }

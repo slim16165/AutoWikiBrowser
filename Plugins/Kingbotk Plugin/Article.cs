@@ -13,205 +13,195 @@ You should have received a copy of the GNU General Public License Version 2 alon
 using System.Text.RegularExpressions;
 using WikiFunctions;
 
-namespace AutoWikiBrowser.Plugins.Kingbotk
+namespace AutoWikiBrowser.Plugins.Kingbotk;
+
+/// <summary>
+/// An object representing an article which may or may not contain the targetted template
+/// </summary>
+internal sealed class Article
 {
-    /// <summary>
-    /// An object representing an article which may or may not contain the targetted template
-    /// </summary>
-    internal sealed class Article
+    // Properties:
+    private readonly string _fullArticleTitle;
+
+    // Plugin-state:
+    private SkipResults _skipResults = SkipResults.NotSet;
+
+    // gets set by ArticleHasAMajorChange/ArticleHasAMinorChange
+    private bool _processIt;
+
+    // New:
+    internal Article(string articleText, string fullArticleTitle, int vNamespace)
     {
-        // Properties:
-        private readonly string _fullArticleTitle;
+        AlteredArticleText = articleText;
+        _fullArticleTitle = fullArticleTitle;
+        Namespace = vNamespace;
+    }
 
-        // Plugin-state:
-        private SkipResults _skipResults = SkipResults.NotSet;
+    // Friend properties:
+    internal string AlteredArticleText { get; set; }
 
-        // gets set by ArticleHasAMajorChange/ArticleHasAMinorChange
-        private bool _processIt;
+    internal string FullArticleTitle => _fullArticleTitle;
 
-        // New:
-        internal Article(string articleText, string fullArticleTitle, int vNamespace)
-        {
-            AlteredArticleText = articleText;
-            _fullArticleTitle = fullArticleTitle;
-            Namespace = vNamespace;
-        }
+    internal int Namespace { get; private set; }
 
-        // Friend properties:
-        internal string AlteredArticleText { get; set; }
+    internal string EditSummary { get; set; }
 
-        internal string FullArticleTitle
-        {
-            get { return _fullArticleTitle; }
-        }
+    internal void ArticleHasAMinorChange()
+    {
+        _processIt = true;
+    }
 
-        internal int Namespace { get; private set; }
+    internal void ArticleHasAMajorChange()
+    {
+        _processIt = true;
+    }
 
-        internal string EditSummary { get; set; }
+    internal bool ProcessIt => _processIt;
 
-        internal void ArticleHasAMinorChange()
-        {
-            _processIt = true;
-        }
-
-        internal void ArticleHasAMajorChange()
+    // For calling by plugin:
+    internal void PluginCheckTemplateCall(string templateCall)
+    {
+        // we have "template:"
+        if (!string.IsNullOrEmpty(templateCall))
         {
             _processIt = true;
         }
+    }
 
-        internal bool ProcessIt
+    internal void PluginIHaveFinished(SkipResults result, string pluginName)
+    {
+        switch (result)
         {
-            get { return _processIt; }
+            case SkipResults.SkipBadTag:
+                _skipResults = SkipResults.SkipBadTag;
+                PluginManager.AWBForm.TraceManager.SkippedArticleBadTag(pluginName, _fullArticleTitle, Namespace);
+                break;
+            case SkipResults.SkipRegex:
+                if (_skipResults == SkipResults.NotSet)
+                    _skipResults = SkipResults.SkipRegex;
+                PluginManager.AWBForm.TraceManager.SkippedArticle(pluginName, "Article text matched skip regex");
+                break;
+            case SkipResults.SkipNoChange:
+                PluginManager.AWBForm.TraceManager.SkippedArticle(pluginName, "No change");
+                _skipResults = SkipResults.SkipNoChange;
+                break;
         }
+    }
 
-        // For calling by plugin:
-        internal void PluginCheckTemplateCall(string templateCall)
+    // For calling by manager:
+    internal SkipResults PluginManagerGetSkipResults => _skipResults;
+
+    internal void FinaliseEditSummary()
+    {
+        if (!string.IsNullOrEmpty(EditSummary))
         {
-            // we have "template:"
-            if (!string.IsNullOrEmpty(templateCall))
-            {
-                _processIt = true;
-            }
+            EditSummary = Regex.Replace(EditSummary, ", $", string.Empty);
         }
+    }
 
-        internal void PluginIHaveFinished(SkipResults result, string pluginName)
-        {
-            switch (result)
-            {
-                case SkipResults.SkipBadTag:
-                    _skipResults = SkipResults.SkipBadTag;
-                    PluginManager.AWBForm.TraceManager.SkippedArticleBadTag(pluginName, _fullArticleTitle, Namespace);
-                    break;
-                case SkipResults.SkipRegex:
-                    if (_skipResults == SkipResults.NotSet)
-                        _skipResults = SkipResults.SkipRegex;
-                    PluginManager.AWBForm.TraceManager.SkippedArticle(pluginName, "Article text matched skip regex");
-                    break;
-                case SkipResults.SkipNoChange:
-                    PluginManager.AWBForm.TraceManager.SkippedArticle(pluginName, "No change");
-                    _skipResults = SkipResults.SkipNoChange;
-                    break;
-            }
-        }
+    // General article writing and manipulation:
+    internal void RenamedATemplate(string oldName, string newName)
+    {
+        DoneReplacement(oldName, newName);
+    }
 
-        // For calling by manager:
-        internal SkipResults PluginManagerGetSkipResults
-        {
-            get { return _skipResults; }
-        }
+    internal void DoneReplacement(string old, string replacement)
+    {
+        _processIt = true;
+        EditSummary += old + "→" + replacement + ", ";
+    }
 
-        internal void FinaliseEditSummary()
-        {
-            if (!string.IsNullOrEmpty(EditSummary))
-            {
-                EditSummary = Regex.Replace(EditSummary, ", $", string.Empty);
-            }
-        }
+    internal void TemplateAdded(string template)
+    {
+        EditSummary += string.Format("Added {{{{{0}}}}}, ", template);
+        ArticleHasAMajorChange();
+    }
 
-        // General article writing and manipulation:
-        internal void RenamedATemplate(string oldName, string newName)
-        {
-            DoneReplacement(oldName, newName);
-        }
+    internal void ParameterAdded(string paramName, string paramValue, bool minorEdit = false)
+    {
+        EditSummary += paramName + "=" + paramValue + ", ";
 
-        internal void DoneReplacement(string old, string replacement)
-        {
-            _processIt = true;
-            EditSummary += old + "→" + replacement + ", ";
-        }
-
-        internal void TemplateAdded(string template)
-        {
-            EditSummary += string.Format("Added {{{{{0}}}}}, ", template);
+        if (minorEdit)
+            ArticleHasAMinorChange();
+        else
             ArticleHasAMajorChange();
-        }
+    }
 
-        internal void ParameterAdded(string paramName, string paramValue, bool minorEdit = false)
+    // FIXME: To be replaced
+    private readonly Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag
+        RestoreTemplateToPlaceholderSpot_strPlaceholder_Init =
+            new Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag();
+
+    private readonly Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag
+        RestoreTemplateToPlaceholderSpot_RestoreTemplateToPlaceholderSpotRegex_Init =
+            new Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag();
+
+    // just write one instance of template even if have multiple conTemplatePlaceholder's
+    private string RestoreTemplateToPlaceholderSpot_strPlaceholder;
+
+    private Regex RestoreTemplateToPlaceholderSpotRegex;
+
+    internal void RestoreTemplateToPlaceholderSpot(string templateheader)
+    {
+        lock (RestoreTemplateToPlaceholderSpot_strPlaceholder_Init)
         {
-            EditSummary += paramName + "=" + paramValue + ", ";
-
-            if (minorEdit)
-                ArticleHasAMinorChange();
-            else
-                ArticleHasAMajorChange();
-        }
-
-        // FIXME: To be replaced
-        private readonly Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag
-            RestoreTemplateToPlaceholderSpot_strPlaceholder_Init =
-                new Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag();
-
-        private readonly Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag
-            RestoreTemplateToPlaceholderSpot_RestoreTemplateToPlaceholderSpotRegex_Init =
-                new Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag();
-
-        // just write one instance of template even if have multiple conTemplatePlaceholder's
-        private string RestoreTemplateToPlaceholderSpot_strPlaceholder;
-
-        private Regex RestoreTemplateToPlaceholderSpotRegex;
-
-        internal void RestoreTemplateToPlaceholderSpot(string templateheader)
-        {
-            lock (RestoreTemplateToPlaceholderSpot_strPlaceholder_Init)
+            try
             {
-                try
+                if (InitStaticVariableHelper(RestoreTemplateToPlaceholderSpot_strPlaceholder_Init))
                 {
-                    if (InitStaticVariableHelper(RestoreTemplateToPlaceholderSpot_strPlaceholder_Init))
-                    {
-                        RestoreTemplateToPlaceholderSpot_strPlaceholder = Regex.Escape(Constants.TemplaterPlaceholder);
-                    }
-                }
-                finally
-                {
-                    RestoreTemplateToPlaceholderSpot_strPlaceholder_Init.State = 1;
+                    RestoreTemplateToPlaceholderSpot_strPlaceholder = Regex.Escape(Constants.TemplaterPlaceholder);
                 }
             }
-
-            lock (RestoreTemplateToPlaceholderSpot_RestoreTemplateToPlaceholderSpotRegex_Init)
+            finally
             {
-                try
+                RestoreTemplateToPlaceholderSpot_strPlaceholder_Init.State = 1;
+            }
+        }
+
+        lock (RestoreTemplateToPlaceholderSpot_RestoreTemplateToPlaceholderSpotRegex_Init)
+        {
+            try
+            {
+                if (InitStaticVariableHelper(RestoreTemplateToPlaceholderSpot_RestoreTemplateToPlaceholderSpotRegex_Init))
                 {
-                    if (InitStaticVariableHelper(RestoreTemplateToPlaceholderSpot_RestoreTemplateToPlaceholderSpotRegex_Init))
-                    {
-                        RestoreTemplateToPlaceholderSpotRegex = new Regex(RestoreTemplateToPlaceholderSpot_strPlaceholder);
-                    }
-                }
-                finally
-                {
-                    RestoreTemplateToPlaceholderSpot_RestoreTemplateToPlaceholderSpotRegex_Init.State = 1;
+                    RestoreTemplateToPlaceholderSpotRegex = new Regex(RestoreTemplateToPlaceholderSpot_strPlaceholder);
                 }
             }
-
-            AlteredArticleText = RestoreTemplateToPlaceholderSpotRegex.Replace(AlteredArticleText, templateheader, 1);
-            AlteredArticleText = RestoreTemplateToPlaceholderSpotRegex.Replace(AlteredArticleText, string.Empty);
-        }
-
-        internal void EditInBrowser()
-        {
-            Tools.EditArticleInBrowser(FullArticleTitle);
-        }
-
-        // Add the template on the top. General fixes will put in a shell if it exists
-        internal void PrependTemplate(Templating template, string parameterBreak, string text)
-        {
-            text += template.ParametersToString(parameterBreak);
-            AlteredArticleText = text + AlteredArticleText;
-        }
-
-        private static bool InitStaticVariableHelper(Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag flag)
-        {
-            if (flag.State == 0)
+            finally
             {
-                flag.State = 2;
-                return true;
+                RestoreTemplateToPlaceholderSpot_RestoreTemplateToPlaceholderSpotRegex_Init.State = 1;
             }
-
-            if (flag.State == 2)
-            {
-                throw new Microsoft.VisualBasic.CompilerServices.IncompleteInitialization();
-            }
-
-            return false;
         }
+
+        AlteredArticleText = RestoreTemplateToPlaceholderSpotRegex.Replace(AlteredArticleText, templateheader, 1);
+        AlteredArticleText = RestoreTemplateToPlaceholderSpotRegex.Replace(AlteredArticleText, string.Empty);
+    }
+
+    internal void EditInBrowser()
+    {
+        Tools.EditArticleInBrowser(FullArticleTitle);
+    }
+
+    // Add the template on the top. General fixes will put in a shell if it exists
+    internal void PrependTemplate(Templating template, string parameterBreak, string text)
+    {
+        text += template.ParametersToString(parameterBreak);
+        AlteredArticleText = text + AlteredArticleText;
+    }
+
+    private static bool InitStaticVariableHelper(Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag flag)
+    {
+        if (flag.State == 0)
+        {
+            flag.State = 2;
+            return true;
+        }
+
+        if (flag.State == 2)
+        {
+            throw new Microsoft.VisualBasic.CompilerServices.IncompleteInitialization();
+        }
+
+        return false;
     }
 }

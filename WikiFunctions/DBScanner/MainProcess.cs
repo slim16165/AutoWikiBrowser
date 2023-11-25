@@ -24,330 +24,324 @@ using System.IO;
 using System.Threading;
 using WikiFunctions.Background;
 
-namespace WikiFunctions.DBScanner
+namespace WikiFunctions.DBScanner;
+
+public delegate void StopDel();
+
+public class ArticleInfo
 {
-    public delegate void StopDel();
+    public string Title, Text, Timestamp, Restrictions;
 
-    public class ArticleInfo
+    public bool IsFullyRead =>
+        !string.IsNullOrEmpty(Title)
+        && !string.IsNullOrEmpty(Timestamp)
+        && Text != null;
+}
+
+class MainProcess
+{
+    public event StopDel StoppedEvent;
+    public CrossThreadQueue<string> OutputQueue;
+
+    private readonly string FileName;
+    private readonly string From = "";
+    private Stream stream;
+
+    private readonly SendOrPostCallback SOPCstopped;
+    private SynchronizationContext Context;
+
+    private Thread ScanThread;
+    readonly List<Thread> SecondaryThreads = new List<Thread>();
+    private readonly bool MultiThreaded;
+    private readonly int ProcessorCount;
+    private readonly CrossThreadQueue<ArticleInfo> PendingArticles = new CrossThreadQueue<ArticleInfo>();
+
+    private readonly List<Scan> Scanners;
+    private readonly bool IgnoreComments;
+
+    public MainProcess(List<Scan> z, string filename, ThreadPriority tp, bool ignoreComments, string startFrom)
+        : this(z, filename, tp, ignoreComments)
     {
-        public string Title, Text, Timestamp, Restrictions;
+        From = startFrom;
+    }
 
-        public bool IsFullyRead
+    public MainProcess(List<Scan> z, string filename, ThreadPriority tp, bool ignoreComments)
+    {
+        ProcessorCount = Environment.ProcessorCount; // caching
+        FileName = filename;
+        SOPCstopped = Stopped;
+        Priority = tp;
+        IgnoreComments = ignoreComments;
+        MultiThreaded = ProcessorCount > 1;
+
+        Scanners = z;
+
+        try
         {
-            get
-            {
-                return !string.IsNullOrEmpty(Title)
-                && !string.IsNullOrEmpty(Timestamp)
-                && Text != null;
-            }
+            stream = new FileStream(FileName, FileMode.Open, FileAccess.Read);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
         }
     }
 
-    class MainProcess
+    /// <summary>
+    /// Gets the percentage of scan complete, ranging from 0 to 1
+    /// </summary>
+    public double PercentageComplete
     {
-        public event StopDel StoppedEvent;
-        public CrossThreadQueue<string> OutputQueue;
-
-        private readonly string FileName;
-        private readonly string From = "";
-        private Stream stream;
-
-        private readonly SendOrPostCallback SOPCstopped;
-        private SynchronizationContext Context;
-
-        private Thread ScanThread;
-        readonly List<Thread> SecondaryThreads = new List<Thread>();
-        private readonly bool MultiThreaded;
-        private readonly int ProcessorCount;
-        private readonly CrossThreadQueue<ArticleInfo> PendingArticles = new CrossThreadQueue<ArticleInfo>();
-
-        private readonly List<Scan> Scanners;
-        private readonly bool IgnoreComments;
-
-        public MainProcess(List<Scan> z, string filename, ThreadPriority tp, bool ignoreComments, string startFrom)
-            : this(z, filename, tp, ignoreComments)
+        get
         {
-            From = startFrom;
-        }
-
-        public MainProcess(List<Scan> z, string filename, ThreadPriority tp, bool ignoreComments)
-        {
-            ProcessorCount = Environment.ProcessorCount; // caching
-            FileName = filename;
-            SOPCstopped = Stopped;
-            Priority = tp;
-            IgnoreComments = ignoreComments;
-            MultiThreaded = ProcessorCount > 1;
-
-            Scanners = z;
-
             try
             {
-                stream = new FileStream(FileName, FileMode.Open, FileAccess.Read);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Gets the percentage of scan complete, ranging from 0 to 1
-        /// </summary>
-        public double PercentageComplete
-        {
-            get
-            {
-                try
+                lock (ScanThread)
                 {
-                    lock (ScanThread)
-                    {
-                        if (stream == null)
-                            return 1; // scan complete
+                    if (stream == null)
+                        return 1; // scan complete
 
-                        if (stream.Length == 0)
-                            return 0;
+                    if (stream.Length == 0)
+                        return 0;
 
-                        return (double)stream.Position / stream.Length;
-                    }
-                }
-                // ObjectDisposedException is still possible if we exited the main loop in Process() due to exception
-                catch (ObjectDisposedException) { } // ignore
-
-                return 1; // scan ended, probably in fire
-            }
-        }
-
-        private void Stopped(object o)
-        {
-            StoppedEvent();
-        }
-
-        public void Stop()
-        {
-            Run = false;
-            if (ScanThread == null) return;
-
-            ScanThread.Abort();
-            foreach (Thread thr in SecondaryThreads)
-            {
-                thr.Abort();
-            }
-            ScanThread.Join();
-
-            foreach (Thread thr in SecondaryThreads)
-            {
-                // avoid deadlocks when calling from secondary thread
-                if (thr.ManagedThreadId != Thread.CurrentThread.ManagedThreadId)
-                    thr.Join();
-            }
-        }
-
-        public void Start()
-        {
-            Context = SynchronizationContext.Current;
-
-            ScanThread = new Thread(Process)
-                             {
-                                 Name = "DB Scanner thread", 
-                                 IsBackground = true, 
-                                 Priority = mPriority
-                             };
-            ScanThread.Start();
-
-            for (int i = 0; i < ProcessorCount - 1; i++)
-            {
-                Thread thr = new Thread(SecondaryThread)
-                                 {
-                                     Name = "DB Scanner thread #" + (i + 2),
-                                     IsBackground = true,
-                                     Priority = mPriority
-                                 };
-                SecondaryThreads.Add(thr);
-                thr.Start();
-            }
-        }
-
-        private void ScanArticle(ArticleInfo ai)
-        {
-            if (IgnoreComments)
-                ai.Text = WikiRegexes.Comments.Replace(ai.Text, "");
-
-            foreach (Scan z in Scanners)
-            {
-                if (!z.Check(ai))
-                {
-                    return;
+                    return (double)stream.Position / stream.Length;
                 }
             }
+            // ObjectDisposedException is still possible if we exited the main loop in Process() due to exception
+            catch (ObjectDisposedException) { } // ignore
 
-            OutputQueue.Add(ai.Title);
+            return 1; // scan ended, probably in fire
+        }
+    }
+
+    private void Stopped(object o)
+    {
+        StoppedEvent();
+    }
+
+    public void Stop()
+    {
+        Run = false;
+        if (ScanThread == null) return;
+
+        ScanThread.Abort();
+        foreach (Thread thr in SecondaryThreads)
+        {
+            thr.Abort();
+        }
+        ScanThread.Join();
+
+        foreach (Thread thr in SecondaryThreads)
+        {
+            // avoid deadlocks when calling from secondary thread
+            if (thr.ManagedThreadId != Thread.CurrentThread.ManagedThreadId)
+                thr.Join();
+        }
+    }
+
+    public void Start()
+    {
+        Context = SynchronizationContext.Current;
+
+        ScanThread = new Thread(Process)
+        {
+            Name = "DB Scanner thread", 
+            IsBackground = true, 
+            Priority = mPriority
+        };
+        ScanThread.Start();
+
+        for (int i = 0; i < ProcessorCount - 1; i++)
+        {
+            Thread thr = new Thread(SecondaryThread)
+            {
+                Name = "DB Scanner thread #" + (i + 2),
+                IsBackground = true,
+                Priority = mPriority
+            };
+            SecondaryThreads.Add(thr);
+            thr.Start();
+        }
+    }
+
+    private void ScanArticle(ArticleInfo ai)
+    {
+        if (IgnoreComments)
+            ai.Text = WikiRegexes.Comments.Replace(ai.Text, "");
+
+        foreach (Scan z in Scanners)
+        {
+            if (!z.Check(ai))
+            {
+                return;
+            }
         }
 
-        private void Process()
+        OutputQueue.Add(ai.Title);
+    }
+
+    private void Process()
+    {
+        string articleTitle = "";
+
+        try
         {
-            string articleTitle = "";
-
-            try
+            using (XmlTextReader reader = new XmlTextReader(stream))
             {
-                using (XmlTextReader reader = new XmlTextReader(stream))
-                {
-                    reader.WhitespaceHandling = WhitespaceHandling.None;
+                reader.WhitespaceHandling = WhitespaceHandling.None;
 
-                    if (From.Length > 0)
+                if (From.Length > 0)
+                {
+                    // move to start from article
+                    while (Run && reader.Read())
                     {
-                        // move to start from article
-                        while (Run && reader.Read())
+                        if (reader.NodeType != XmlNodeType.Element)
+                            continue;
+
+                        if (reader.Name != "title")
                         {
-                            if (reader.NodeType != XmlNodeType.Element)
-                                continue;
-
-                            if (reader.Name != "title")
-                            {
-                                reader.ReadToFollowing("page");
-                                continue;
-                            }
-
-                            // reader.ReadToFollowing("title");
-                            articleTitle = reader.ReadString();
-
-                            if (From.Equals(articleTitle))
-                                break;
+                            reader.ReadToFollowing("page");
+                            continue;
                         }
-                    }
 
-                    while (Run)
-                    {
-                        ArticleInfo ai = ReadArticle(reader);
-                        if (ai == null) break;
-                        articleTitle = ai.Title;
+                        // reader.ReadToFollowing("title");
+                        articleTitle = reader.ReadString();
 
-                        // we must maintain a huge enough buffer to safeguard against fluctuations
-                        // of page size
-                        if (MultiThreaded && (PendingArticles.Count < ProcessorCount * 10))
-                            PendingArticles.Add(ai);
-                        else
-                            ScanArticle(ai);
-                    }
-
-                    lock (ScanThread)
-                    {
-                        stream = null;
-                    }
-
-                    if (MultiThreaded)
-                    {
-                        while (PendingArticles.Count > 0)
-                            Thread.Sleep(10);
-
-                        Run = false;
-
-                        foreach (Thread thr in SecondaryThreads)
-                            thr.Join();
+                        if (From.Equals(articleTitle))
+                            break;
                     }
                 }
-            }
-            catch (ThreadAbortException) { }
-            catch (Exception ex)
-            {
-                if (Message)
-                    //System.Windows.Forms.MessageBox.Show("Problem on " + articleTitle + "\r\n\r\n" + ex.Message);
-                    ErrorHandler.HandleException(ex);
-            }
-            finally
-            {
-                if (Message)
-                    Context.Post(SOPCstopped, articleTitle);
-            }
-        }
 
-        /// <summary>
-        /// Reads a page from the reader, returns ArticleInfo or null if EOF
-        /// </summary>
-        private ArticleInfo ReadArticle(XmlReader reader)
-        {
-            do 
-                if (!reader.ReadToFollowing("page")) return null;
-            while (!reader.IsStartElement());
-
-            ArticleInfo ai = new ArticleInfo();
-            while (reader.Read() && reader.Name != "page") // stop on closing element
-            {
-                if (!reader.IsStartElement()) continue;
-                switch (reader.Name)
-                {
-                    case "title":
-                        ai.Title = reader.ReadString();
-                        break;
-                    case "timestamp":
-                        ai.Timestamp = reader.ReadString();
-                        break;
-                    case "restrictions":
-                        ai.Restrictions = reader.ReadString();
-                        break;
-                    case "text":
-                        ai.Text = reader.ReadString();
-                        break;
-                }
-            }
-
-            return ai.IsFullyRead ? ai : null;
-        }
-
-        private void SecondaryThread()
-        {
-            try
-            {
                 while (Run)
                 {
-                    bool sleep;
-                    if (PendingArticles.Count > 0) lock (PendingArticles)
-                        {
-                            if (PendingArticles.Count > 0)
-                            {
-                                ArticleInfo ai = PendingArticles.Remove();
-                                ScanArticle(ai);
-                                sleep = false;
-                            }
-                            else
-                                sleep = true;
-                        }
+                    ArticleInfo ai = ReadArticle(reader);
+                    if (ai == null) break;
+                    articleTitle = ai.Title;
+
+                    // we must maintain a huge enough buffer to safeguard against fluctuations
+                    // of page size
+                    if (MultiThreaded && (PendingArticles.Count < ProcessorCount * 10))
+                        PendingArticles.Add(ai);
+                    else
+                        ScanArticle(ai);
+                }
+
+                lock (ScanThread)
+                {
+                    stream = null;
+                }
+
+                if (MultiThreaded)
+                {
+                    while (PendingArticles.Count > 0)
+                        Thread.Sleep(10);
+
+                    Run = false;
+
+                    foreach (Thread thr in SecondaryThreads)
+                        thr.Join();
+                }
+            }
+        }
+        catch (ThreadAbortException) { }
+        catch (Exception ex)
+        {
+            if (Message)
+                //System.Windows.Forms.MessageBox.Show("Problem on " + articleTitle + "\r\n\r\n" + ex.Message);
+                ErrorHandler.HandleException(ex);
+        }
+        finally
+        {
+            if (Message)
+                Context.Post(SOPCstopped, articleTitle);
+        }
+    }
+
+    /// <summary>
+    /// Reads a page from the reader, returns ArticleInfo or null if EOF
+    /// </summary>
+    private ArticleInfo ReadArticle(XmlReader reader)
+    {
+        do 
+            if (!reader.ReadToFollowing("page")) return null;
+        while (!reader.IsStartElement());
+
+        ArticleInfo ai = new ArticleInfo();
+        while (reader.Read() && reader.Name != "page") // stop on closing element
+        {
+            if (!reader.IsStartElement()) continue;
+            switch (reader.Name)
+            {
+                case "title":
+                    ai.Title = reader.ReadString();
+                    break;
+                case "timestamp":
+                    ai.Timestamp = reader.ReadString();
+                    break;
+                case "restrictions":
+                    ai.Restrictions = reader.ReadString();
+                    break;
+                case "text":
+                    ai.Text = reader.ReadString();
+                    break;
+            }
+        }
+
+        return ai.IsFullyRead ? ai : null;
+    }
+
+    private void SecondaryThread()
+    {
+        try
+        {
+            while (Run)
+            {
+                bool sleep;
+                if (PendingArticles.Count > 0) lock (PendingArticles)
+                {
+                    if (PendingArticles.Count > 0)
+                    {
+                        ArticleInfo ai = PendingArticles.Remove();
+                        ScanArticle(ai);
+                        sleep = false;
+                    }
                     else
                         sleep = true;
-
-                    if (sleep)
-                        Thread.Sleep(1);
                 }
-            }
-            catch (ThreadAbortException)
-            { }
-            catch (Exception ex)
-            {
-                ErrorHandler.HandleException(ex);
+                else
+                    sleep = true;
+
+                if (sleep)
+                    Thread.Sleep(1);
             }
         }
-
-        #region Properties
-
-        public bool Run = true;
-        public bool Message = true;
-
-        ThreadPriority mPriority = ThreadPriority.BelowNormal;
-        public ThreadPriority Priority
+        catch (ThreadAbortException)
+        { }
+        catch (Exception ex)
         {
-            get { return mPriority; }
-            set
-            {
-                mPriority = value;
-                if (ScanThread != null)
-                    ScanThread.Priority = value;
+            ErrorHandler.HandleException(ex);
+        }
+    }
 
-                foreach (Thread thr in SecondaryThreads)
-                {
-                    thr.Priority = value;
-                }
+    #region Properties
+
+    public bool Run = true;
+    public bool Message = true;
+
+    ThreadPriority mPriority = ThreadPriority.BelowNormal;
+    public ThreadPriority Priority
+    {
+        get => mPriority;
+        set
+        {
+            mPriority = value;
+            if (ScanThread != null)
+                ScanThread.Priority = value;
+
+            foreach (Thread thr in SecondaryThreads)
+            {
+                thr.Priority = value;
             }
         }
-        #endregion
     }
+    #endregion
 }

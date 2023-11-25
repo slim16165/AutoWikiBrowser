@@ -26,246 +26,239 @@ using WikiFunctions.AWBSettings;
 using WikiFunctions.Parse;
 using WikiFunctions.Plugin;
 
-namespace AutoWikiBrowser.Plugins.Delinker
+namespace AutoWikiBrowser.Plugins.Delinker;
+
+public class DelinkerAWBPlugin : IAWBPlugin
 {
-    public class DelinkerAWBPlugin : IAWBPlugin
-    {
-        private readonly ToolStripMenuItem pluginenabledMenuItem = new ToolStripMenuItem("Delinker plugin");
-        private readonly ToolStripMenuItem pluginconfigMenuItem = new ToolStripMenuItem("Configuration");
-        private ToolStripMenuItem aboutMenuItem = new ToolStripMenuItem("About the Delinker plugin");
-        private static IAutoWikiBrowser AWB;
+    private readonly ToolStripMenuItem pluginenabledMenuItem = new ToolStripMenuItem("Delinker plugin");
+    private readonly ToolStripMenuItem pluginconfigMenuItem = new ToolStripMenuItem("Configuration");
+    private ToolStripMenuItem aboutMenuItem = new ToolStripMenuItem("About the Delinker plugin");
+    private static IAutoWikiBrowser AWB;
 
-        private static bool Enabled;
-        internal static bool Skip;
-        internal static string Link;
-        internal static bool RemoveEmptiedSections = true;
+    private static bool Enabled;
+    internal static bool Skip;
+    internal static string Link;
+    internal static bool RemoveEmptiedSections = true;
 
-        private Regex r1,
-                      r2,
-                      r3;
+    private Regex r1,
+        r2,
+        r3;
 
-        private readonly Regex RefStartRegex = new Regex(@"< ?ref(|[^>]*?[^/> ])\s*>", RegexOptions.Compiled);
-        private readonly Regex RefNameRegex = new Regex(@"name ?= ?""?(\S*)""?", RegexOptions.Compiled);
+    private readonly Regex RefStartRegex = new Regex(@"< ?ref(|[^>]*?[^/> ])\s*>", RegexOptions.Compiled);
+    private readonly Regex RefNameRegex = new Regex(@"name ?= ?""?(\S*)""?", RegexOptions.Compiled);
 
-        private readonly Regex ExternalLinksSectionRegex =
+    private readonly Regex ExternalLinksSectionRegex =
             new Regex(@"^={2,3}\s*((external )?links?|web ?links?|(�����(��|��) )?�����[��])\s*={2,3}\s*\r?\n",
-                      RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline),
-                               r4 = new Regex(@"< ?ref(|[^>]*?[^/> ])\s*>(.*?)< ?/ ?ref ?>",
-                                              RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.Singleline |
-                                              RegexOptions.IgnoreCase);
+                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline),
+        r4 = new Regex(@"< ?ref(|[^>]*?[^/> ])\s*>(.*?)< ?/ ?ref ?>",
+            RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.Singleline |
+            RegexOptions.IgnoreCase);
 
-        private string LinkRegexed;
+    private string LinkRegexed;
 
-        private readonly List<string> RefNames = new List<string>();
+    private readonly List<string> RefNames = new List<string>();
 
-        private readonly Parsers parser = new Parsers();
+    private readonly Parsers parser = new Parsers();
 
-        public void Initialise(IAutoWikiBrowser sender)
+    public void Initialise(IAutoWikiBrowser sender)
+    {
+        if (sender == null)
+            throw new ArgumentNullException("sender");
+
+        AWB = sender;
+
+        // Menuitem should be checked when plugin is active and unchecked when not, and default to not!
+        pluginenabledMenuItem.CheckOnClick = true;
+
+        pluginconfigMenuItem.Click += ShowSettings;
+        pluginenabledMenuItem.CheckedChanged += PluginEnabledCheckedChange;
+        aboutMenuItem.Click += AboutMenuItemClicked;
+        pluginenabledMenuItem.DropDownItems.Add(pluginconfigMenuItem);
+
+        sender.PluginsToolStripMenuItem.DropDownItems.Add(pluginenabledMenuItem);
+        sender.HelpToolStripMenuItem.DropDownItems.Add(aboutMenuItem);
+
+        Reset();
+    }
+
+    void ShowSettings(object sender, EventArgs e)
+    {
+        if (new SettingsForm().ShowDialog(AWB.Form) == DialogResult.OK)
+            GenerateRegexes();
+    }
+
+    void PluginEnabledCheckedChange(object sender, EventArgs e)
+    {
+        Enabled = pluginenabledMenuItem.Checked;
+    }
+
+    void AboutMenuItemClicked(object o, EventArgs e)
+    {
+        new AboutBox().ShowDialog();
+    }
+
+    public string Name => "Delinker";
+
+    public string WikiName => "Delinker plugin";
+
+    private string RemoveSection(string articleText)
+    {
+        //string text = WikiRegexes.Comments.Replace(ArticleText, "");
+
+        string[] sections = Tools.SplitToSections(articleText);
+
+        for (int i = 0; i < sections.Length; i++)
         {
-            if (sender == null)
-                throw new ArgumentNullException("sender");
-
-            AWB = sender;
-
-            // Menuitem should be checked when plugin is active and unchecked when not, and default to not!
-            pluginenabledMenuItem.CheckOnClick = true;
-
-            pluginconfigMenuItem.Click += ShowSettings;
-            pluginenabledMenuItem.CheckedChanged += PluginEnabledCheckedChange;
-            aboutMenuItem.Click += AboutMenuItemClicked;
-            pluginenabledMenuItem.DropDownItems.Add(pluginconfigMenuItem);
-
-            sender.PluginsToolStripMenuItem.DropDownItems.Add(pluginenabledMenuItem);
-            sender.HelpToolStripMenuItem.DropDownItems.Add(aboutMenuItem);
-
-            Reset();
-        }
-
-        void ShowSettings(object sender, EventArgs e)
-        {
-            if (new SettingsForm().ShowDialog(AWB.Form) == DialogResult.OK)
-                GenerateRegexes();
-        }
-
-        void PluginEnabledCheckedChange(object sender, EventArgs e)
-        {
-            Enabled = pluginenabledMenuItem.Checked;
-        }
-
-        void AboutMenuItemClicked(object o, EventArgs e)
-        {
-            new AboutBox().ShowDialog();
-        }
-
-        public string Name
-        {
-            get { return "Delinker"; }
-        }
-
-        public string WikiName
-        {
-            get { return "Delinker plugin"; }
-        }
-
-        private string RemoveSection(string articleText)
-        {
-            //string text = WikiRegexes.Comments.Replace(ArticleText, "");
-
-            string[] sections = Tools.SplitToSections(articleText);
-
-            for (int i = 0; i < sections.Length; i++)
+            if (ExternalLinksSectionRegex.IsMatch(sections[i]))
             {
-                if (ExternalLinksSectionRegex.IsMatch(sections[i]))
+                bool lastSection = (i == (sections.Length - 1));
+                if (WikiRegexes.ExternalLinks.IsMatch(sections[i])) return articleText;
+
+                string el = ExternalLinksSectionRegex.Replace(sections[i], "").Trim();
+
+                if (lastSection)
                 {
-                    bool lastSection = (i == (sections.Length - 1));
-                    if (WikiRegexes.ExternalLinks.IsMatch(sections[i])) return articleText;
-
-                    string el = ExternalLinksSectionRegex.Replace(sections[i], "").Trim();
-
-                    if (lastSection)
-                    {
-                        parser.Sorter.RemoveCats(ref el, "");
-                        parser.Sorter.Interwikis(ref el);
-                        MetaDataSorter.RemoveDisambig(ref articleText);
-                        MetaDataSorter.RemovePersonData(ref articleText);
-                        MetaDataSorter.RemoveStubs(ref articleText);
-                    }
-                    el = Parsers.RemoveAllWhiteSpace(articleText).Trim();
-
-                    if (el.Length == 0)
-                        return ExternalLinksSectionRegex.Replace(articleText, "");
-
-                    break;
+                    parser.Sorter.RemoveCats(ref el, "");
+                    parser.Sorter.Interwikis(ref el);
+                    MetaDataSorter.RemoveDisambig(ref articleText);
+                    MetaDataSorter.RemovePersonData(ref articleText);
+                    MetaDataSorter.RemoveStubs(ref articleText);
                 }
-            }
+                el = Parsers.RemoveAllWhiteSpace(articleText).Trim();
 
-            return articleText;
+                if (el.Length == 0)
+                    return ExternalLinksSectionRegex.Replace(articleText, "");
+
+                break;
+            }
         }
 
-        string R4Evaluator(Match match)
+        return articleText;
+    }
+
+    string R4Evaluator(Match match)
+    {
+        if (RefStartRegex.IsMatch(match.Groups[2].Value)) return match.Value;
+
+        if (Regex.IsMatch(match.Value, LinkRegexed))
         {
-            if (RefStartRegex.IsMatch(match.Groups[2].Value)) return match.Value;
+            string name = RefNameRegex.Match(match.Groups[1].Value).Groups[1].Value;
+            if (name.Length > 0 && !RefNames.Contains(name)) RefNames.Add(name);
 
-            if (Regex.IsMatch(match.Value, LinkRegexed))
-            {
-                string name = RefNameRegex.Match(match.Groups[1].Value).Groups[1].Value;
-                if (name.Length > 0 && !RefNames.Contains(name)) RefNames.Add(name);
-
-                return "";
-            }
-
-            return match.Value;
+            return "";
         }
 
-        public string ProcessArticle(IAutoWikiBrowser sender, IProcessArticleEventArgs eventargs)
-        {
-            if (!Enabled || string.IsNullOrEmpty(Link)) return eventargs.ArticleText;
+        return match.Value;
+    }
 
-            string articleText = eventargs.ArticleText;
-            RefNames.Clear();
+    public string ProcessArticle(IAutoWikiBrowser sender, IProcessArticleEventArgs eventargs)
+    {
+        if (!Enabled || string.IsNullOrEmpty(Link)) return eventargs.ArticleText;
 
-            articleText = r4.Replace(articleText, R4Evaluator);
+        string articleText = eventargs.ArticleText;
+        RefNames.Clear();
+
+        articleText = r4.Replace(articleText, R4Evaluator);
             
-            articleText = r1.Replace(articleText, "");
-            articleText = r2.Replace(articleText, "");
-            articleText = r3.Replace(articleText, "");
+        articleText = r1.Replace(articleText, "");
+        articleText = r2.Replace(articleText, "");
+        articleText = r3.Replace(articleText, "");
 
-            if (RefNames.Count > 0)
-            {
-                foreach (string name in RefNames)
-                {
-                    articleText = Regex.Replace(articleText, @"< ?ref\b[^>]*?name ?= ?""?" + name + "[\" ]? ?/ ?>", "");
-                }
-            }
-
-            if (articleText == eventargs.ArticleText)
-            {
-                eventargs.Skip = Skip;
-            }
-            else
-            {
-            	if (RemoveEmptiedSections && (Variables.LangCode.Equals("en") ||
-            	                              Variables.LangCode.Equals("de") ||
-            	                              Variables.LangCode.Equals("ru")))
-                    articleText = RemoveSection(articleText);
-            }
-
-            return articleText;
-        }
-
-        public void LoadSettings(object[] prefs)
+        if (RefNames.Count > 0)
         {
-            Reset();
-            if (prefs == null) return;
-
-            foreach (object o in prefs)
+            foreach (string name in RefNames)
             {
-                PrefsKeyPair p = o as PrefsKeyPair;
-                if (p == null) continue;
-
-                switch (p.Name.ToLower())
-                {
-                    case "enabled":
-                        Enabled = (bool)p.Setting;
-                        break;
-                    case "link":
-                        Link = (string)p.Setting;
-                        break;
-                    case "skip":
-                        Skip = (bool)p.Setting;
-                        break;
-                    case "removeemptiedsections":
-                        RemoveEmptiedSections = (bool)p.Setting;
-                        break;
-                }
-
-                GenerateRegexes();
+                articleText = Regex.Replace(articleText, @"< ?ref\b[^>]*?name ?= ?""?" + name + "[\" ]? ?/ ?>", "");
             }
         }
 
-        public object[] SaveSettings()
+        if (articleText == eventargs.ArticleText)
         {
-            return new object[]
-            {
-                new PrefsKeyPair("Enabled", Enabled),
-                new PrefsKeyPair("Link", Link),
-                new PrefsKeyPair("Skip", Skip),
-                new PrefsKeyPair("RemoveEmptiedSections", RemoveEmptiedSections)
-            };
+            eventargs.Skip = Skip;
+        }
+        else
+        {
+            if (RemoveEmptiedSections && (Variables.LangCode.Equals("en") ||
+                                          Variables.LangCode.Equals("de") ||
+                                          Variables.LangCode.Equals("ru")))
+                articleText = RemoveSection(articleText);
         }
 
-        public void Reset()
+        return articleText;
+    }
+
+    public void LoadSettings(object[] prefs)
+    {
+        Reset();
+        if (prefs == null) return;
+
+        foreach (object o in prefs)
         {
-            Enabled = false;
-            Skip = false;
-            Link = "";
+            PrefsKeyPair p = o as PrefsKeyPair;
+            if (p == null) continue;
+
+            switch (p.Name.ToLower())
+            {
+                case "enabled":
+                    Enabled = (bool)p.Setting;
+                    break;
+                case "link":
+                    Link = (string)p.Setting;
+                    break;
+                case "skip":
+                    Skip = (bool)p.Setting;
+                    break;
+                case "removeemptiedsections":
+                    RemoveEmptiedSections = (bool)p.Setting;
+                    break;
+            }
 
             GenerateRegexes();
         }
+    }
 
-        private void GenerateRegexes()
+    public object[] SaveSettings()
+    {
+        return new object[]
         {
-            if (string.IsNullOrEmpty(Link)) return;
+            new PrefsKeyPair("Enabled", Enabled),
+            new PrefsKeyPair("Link", Link),
+            new PrefsKeyPair("Skip", Skip),
+            new PrefsKeyPair("RemoveEmptiedSections", RemoveEmptiedSections)
+        };
+    }
 
-            LinkRegexed = @"https?://(\S*?\.|)" + Link + @"/?(|[^\]\s]*?)";
+    public void Reset()
+    {
+        Enabled = false;
+        Skip = false;
+        Link = "";
 
-            r1 = new Regex(@"^[\*#]\s*\[" + LinkRegexed + @"(|\s+[^\]]*?)\].{0,100}\n",
-                RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        GenerateRegexes();
+    }
 
-            r2 = new Regex(@"^[\*#]\s*" + LinkRegexed + @"\s+.{0,100}\n",
-                RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+    private void GenerateRegexes()
+    {
+        if (string.IsNullOrEmpty(Link)) return;
 
-            r3 = new Regex(@"\[" + LinkRegexed + @"\]",
-                RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
-        }
+        LinkRegexed = @"https?://(\S*?\.|)" + Link + @"/?(|[^\]\s]*?)";
 
-        public void Nudge(out bool cancel)
-        {
-            cancel = false;
-        }
+        r1 = new Regex(@"^[\*#]\s*\[" + LinkRegexed + @"(|\s+[^\]]*?)\].{0,100}\n",
+            RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
-        public void Nudged(int nudges)
-        {
-        }
+        r2 = new Regex(@"^[\*#]\s*" + LinkRegexed + @"\s+.{0,100}\n",
+            RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+        r3 = new Regex(@"\[" + LinkRegexed + @"\]",
+            RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+    }
+
+    public void Nudge(out bool cancel)
+    {
+        cancel = false;
+    }
+
+    public void Nudged(int nudges)
+    {
     }
 }

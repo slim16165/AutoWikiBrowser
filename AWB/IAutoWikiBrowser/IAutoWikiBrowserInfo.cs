@@ -20,19 +20,18 @@ using System;
 using WikiFunctions;
 using WikiFunctions.Plugin;
 
-namespace AutoWikiBrowser
-{
-    partial class MainForm
-    {
-        Version IAutoWikiBrowserInfo.AWBVersion { get { return Program.Version; } }
-        Version IAutoWikiBrowserInfo.WikiFunctionsVersion { get { return Tools.Version; } }
-        string IAutoWikiBrowserInfo.AWBVersionString { get { return Program.VersionString; } }
-        string IAutoWikiBrowserInfo.WikiFunctionsVersionString { get { return Tools.VersionString; } }
-        string IAutoWikiBrowserInfo.WikiDiffVersionString { get { return "(internal)"; } }
-        string IAutoWikiBrowserInfo.LangCode { get { return Variables.LangCode; } }
-        ProjectEnum IAutoWikiBrowserInfo.Project { get { return Variables.Project; } }
+namespace AutoWikiBrowser;
 
-        bool IAutoWikiBrowserInfo.Privacy { get { return Properties.Settings.Default.Privacy; } }
-        bool IAutoWikiBrowserInfo.Shutdown { get { return ShuttingDown; } }
-    }
+partial class MainForm
+{
+    Version IAutoWikiBrowserInfo.AWBVersion => Program.Version;
+    Version IAutoWikiBrowserInfo.WikiFunctionsVersion => Tools.Version;
+    string IAutoWikiBrowserInfo.AWBVersionString => Program.VersionString;
+    string IAutoWikiBrowserInfo.WikiFunctionsVersionString => Tools.VersionString;
+    string IAutoWikiBrowserInfo.WikiDiffVersionString => "(internal)";
+    string IAutoWikiBrowserInfo.LangCode => Variables.LangCode;
+    ProjectEnum IAutoWikiBrowserInfo.Project => Variables.Project;
+
+    bool IAutoWikiBrowserInfo.Privacy => Properties.Settings.Default.Privacy;
+    bool IAutoWikiBrowserInfo.Shutdown => ShuttingDown;
 }

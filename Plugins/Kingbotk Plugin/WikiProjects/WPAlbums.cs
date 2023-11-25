@@ -13,111 +13,98 @@ You should have received a copy of the GNU General Public License Version 2 alon
 using System.Windows.Forms;
 using System.Xml;
 
-namespace AutoWikiBrowser.Plugins.Kingbotk.WikiProjects
+namespace AutoWikiBrowser.Plugins.Kingbotk.WikiProjects;
+
+internal sealed class WPAlbums : PluginBase
 {
-    internal sealed class WPAlbums : PluginBase
+    private const string PluginName = "WikiProject Albums";
+
+    private const string Prefix = "Albums";
+
+    internal WPAlbums() : base("Album|Albums|WP Albums|WPAlbums")
     {
-        private const string PluginName = "WikiProject Albums";
+        // Specify alternate names only
+        TemplateParameters[] @params = new TemplateParameters[-1 + 1];
 
-        private const string Prefix = "Albums";
+        _ourSettingsControl = new GenericWithWorkgroups("WikiProject Albums", Prefix, true, @params);
+    }
 
-        internal WPAlbums() : base("Album|Albums|WP Albums|WPAlbums")
-        {
-            // Specify alternate names only
-            TemplateParameters[] @params = new TemplateParameters[-1 + 1];
+    // Settings:
+    private readonly TabPage _ourTab = new TabPage("Albums");
 
-            _ourSettingsControl = new GenericWithWorkgroups("WikiProject Albums", Prefix, true, @params);
-        }
+    private readonly GenericWithWorkgroups _ourSettingsControl;
 
-        // Settings:
-        private readonly TabPage _ourTab = new TabPage("Albums");
+    protected internal override string PluginShortName => "Albums";
 
-        private readonly GenericWithWorkgroups _ourSettingsControl;
+    protected override string PreferredTemplateName => PluginName;
 
-        protected internal override string PluginShortName
-        {
-            get { return "Albums"; }
-        }
+    protected override void ImportanceParameter(Importance importance)
+    {
+        Template.NewOrReplaceTemplateParm("importance", importance.ToString(), TheArticle, false, false);
+    }
 
-        protected override string PreferredTemplateName
-        {
-            get { return PluginName; }
-        }
+    protected internal override IGenericSettings GenericSettings => _ourSettingsControl;
 
-        protected override void ImportanceParameter(Importance importance)
-        {
-            Template.NewOrReplaceTemplateParm("importance", importance.ToString(), TheArticle, false, false);
-        }
+    // Initialisation:
+    protected internal override void Initialise()
+    {
+        OurMenuItem = new ToolStripMenuItem("Albums Plugin");
+        InitialiseBase();
+        // must set menu item object first
+        _ourTab.UseVisualStyleBackColor = true;
+        _ourTab.Controls.Add(_ourSettingsControl);
+    }
 
-        protected internal override IGenericSettings GenericSettings
-        {
-            get { return _ourSettingsControl; }
-        }
+    // Article processing:
+    protected override bool SkipIfContains()
+    {
+        return false;
+    }
 
-        // Initialisation:
-        protected internal override void Initialise()
-        {
-            OurMenuItem = new ToolStripMenuItem("Albums Plugin");
-            InitialiseBase();
-            // must set menu item object first
-            _ourTab.UseVisualStyleBackColor = true;
-            _ourTab.Controls.Add(_ourSettingsControl);
-        }
+    protected override void ProcessArticleFinish()
+    {
+        StubClass();
+    }
 
-        // Article processing:
-        protected override bool SkipIfContains()
-        {
-            return false;
-        }
+    protected override bool TemplateFound()
+    {
+        // Nothing to do here
+        return false;
+    }
 
-        protected override void ProcessArticleFinish()
-        {
-            StubClass();
-        }
+    protected override string WriteTemplateHeader()
+    {
+        return "{{" + PluginName + WriteOutParameterToHeader("class") + WriteOutParameterToHeader("importance");
+    }
 
-        protected override bool TemplateFound()
-        {
-            // Nothing to do here
-            return false;
-        }
+    // User interface:
+    protected override void ShowHideOurObjects(bool visible)
+    {
+        PluginManager.ShowHidePluginTab(_ourTab, visible);
+    }
 
-        protected override string WriteTemplateHeader()
-        {
-            return "{{" + PluginName + WriteOutParameterToHeader("class") + WriteOutParameterToHeader("importance");
-        }
+    // XML settings:
+    protected internal override void ReadXML(XmlTextReader reader)
+    {
+        Enabled = PluginManager.XMLReadBoolean(reader, Prefix + "Enabled", Enabled);
+        _ourSettingsControl.ReadXML(reader);
+    }
 
-        // User interface:
-        protected override void ShowHideOurObjects(bool visible)
-        {
-            PluginManager.ShowHidePluginTab(_ourTab, visible);
-        }
+    protected internal override void Reset()
+    {
+        _ourSettingsControl.Reset();
+    }
 
-        // XML settings:
-        protected internal override void ReadXML(XmlTextReader reader)
-        {
-            Enabled = PluginManager.XMLReadBoolean(reader, Prefix + "Enabled", Enabled);
-            _ourSettingsControl.ReadXML(reader);
-        }
+    protected internal override void WriteXML(XmlTextWriter writer)
+    {
+        writer.WriteAttributeString(Prefix + "Enabled", Enabled.ToString());
+        _ourSettingsControl.WriteXML(writer);
+    }
 
-        protected internal override void Reset()
-        {
-            _ourSettingsControl.Reset();
-        }
+    // Misc:
+    internal override bool HasReqPhotoParam => false;
 
-        protected internal override void WriteXML(XmlTextWriter writer)
-        {
-            writer.WriteAttributeString(Prefix + "Enabled", Enabled.ToString());
-            _ourSettingsControl.WriteXML(writer);
-        }
-
-        // Misc:
-        internal override bool HasReqPhotoParam
-        {
-            get { return false; }
-        }
-
-        internal override void ReqPhoto()
-        {
-        }
+    internal override void ReqPhoto()
+    {
     }
 }

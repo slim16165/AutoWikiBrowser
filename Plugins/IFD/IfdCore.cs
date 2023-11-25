@@ -25,185 +25,178 @@ using WikiFunctions;
 using WikiFunctions.Parse;
 using WikiFunctions.AWBSettings;
 
-namespace AutoWikiBrowser.Plugins.IFD
+namespace AutoWikiBrowser.Plugins.IFD;
+
+public sealed class IfdAWBPlugin : IAWBPlugin
 {
-    public sealed class IfdAWBPlugin : IAWBPlugin
+    private readonly ToolStripMenuItem pluginenabledMenuItem = new ToolStripMenuItem("Images For Deletion plugin");
+    private readonly ToolStripMenuItem pluginconfigMenuItem = new ToolStripMenuItem("Configuration");
+    private readonly ToolStripMenuItem aboutMenuItem = new ToolStripMenuItem("About the IFD plugin");
+    internal static IAutoWikiBrowser AWB;
+    internal static IfdSettings Settings = new IfdSettings();
+
+    public void Initialise(IAutoWikiBrowser sender)
     {
-        private readonly ToolStripMenuItem pluginenabledMenuItem = new ToolStripMenuItem("Images For Deletion plugin");
-        private readonly ToolStripMenuItem pluginconfigMenuItem = new ToolStripMenuItem("Configuration");
-        private readonly ToolStripMenuItem aboutMenuItem = new ToolStripMenuItem("About the IFD plugin");
-        internal static IAutoWikiBrowser AWB;
-        internal static IfdSettings Settings = new IfdSettings();
+        if (sender == null)
+            throw new ArgumentNullException("sender");
 
-        public void Initialise(IAutoWikiBrowser sender)
+        AWB = sender;
+
+        // Menuitem should be checked when IFD plugin is active and unchecked when not, and default to not!
+        pluginenabledMenuItem.CheckOnClick = true;
+        PluginEnabled = Settings.Enabled;
+
+        pluginconfigMenuItem.Click += ShowSettings;
+        pluginenabledMenuItem.CheckedChanged += PluginEnabledCheckedChange;
+        aboutMenuItem.Click += AboutMenuItemClicked;
+        pluginenabledMenuItem.DropDownItems.Add(pluginconfigMenuItem);
+
+        sender.PluginsToolStripMenuItem.DropDownItems.Add(pluginenabledMenuItem);
+        sender.HelpToolStripMenuItem.DropDownItems.Add(aboutMenuItem);
+    }
+
+    public string Name => "IFD-Plugin";
+
+    public string WikiName =>
+        "[[WP:IFD|IFD]] Plugin version " +
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+
+    public string ProcessArticle(IAutoWikiBrowser sender, IProcessArticleEventArgs eventargs)
+    {
+        //If menu item is not checked, then return
+        if (!PluginEnabled || Settings.Images.Count == 0)
         {
-            if (sender == null)
-                throw new ArgumentNullException("sender");
-
-            AWB = sender;
-
-            // Menuitem should be checked when IFD plugin is active and unchecked when not, and default to not!
-            pluginenabledMenuItem.CheckOnClick = true;
-            PluginEnabled = Settings.Enabled;
-
-            pluginconfigMenuItem.Click += ShowSettings;
-            pluginenabledMenuItem.CheckedChanged += PluginEnabledCheckedChange;
-            aboutMenuItem.Click += AboutMenuItemClicked;
-            pluginenabledMenuItem.DropDownItems.Add(pluginconfigMenuItem);
-
-            sender.PluginsToolStripMenuItem.DropDownItems.Add(pluginenabledMenuItem);
-            sender.HelpToolStripMenuItem.DropDownItems.Add(aboutMenuItem);
+            eventargs.Skip = false;
+            return eventargs.ArticleText;
         }
 
-        public string Name
-        { get { return "IFD-Plugin"; } }
+        string text = eventargs.ArticleText;
 
-        public string WikiName
+        string removed = "", replaced = "";
+
+        foreach (KeyValuePair<string, string> p in Settings.Images)
         {
-            get
+            bool noChange;
+
+            if (p.Value.Length == 0)
             {
-                return "[[WP:IFD|IFD]] Plugin version " +
-            System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            }
-        }
-
-        public string ProcessArticle(IAutoWikiBrowser sender, IProcessArticleEventArgs eventargs)
-        {
-            //If menu item is not checked, then return
-            if (!PluginEnabled || Settings.Images.Count == 0)
-            {
-                eventargs.Skip = false;
-                return eventargs.ArticleText;
-            }
-
-            string text = eventargs.ArticleText;
-
-            string removed = "", replaced = "";
-
-            foreach (KeyValuePair<string, string> p in Settings.Images)
-            {
-                bool noChange;
-
-                if (p.Value.Length == 0)
-                {
-                    text = Parsers.RemoveImage(p.Key, text, Settings.Comment, "", out noChange);
-                    if (!noChange)
-                    {
-                        if (!string.IsNullOrEmpty(removed))
-                        {
-                            removed += ", ";
-                        }
-
-                        removed += Variables.Namespaces[Namespace.File] + p.Key;
-                    }
-                }
-                else
-                {
-                    text = Parsers.ReplaceImage(p.Key, p.Value, text, out noChange);
-                    if (!noChange)
-                    {
-                        if (!string.IsNullOrEmpty(replaced))
-                        {
-                            replaced += ", ";
-                        }
-
-                        replaced += Variables.Namespaces[Namespace.File]
-                         + p.Key + FindandReplace.Arrow + Variables.Namespaces[Namespace.File] + p.Value;
-                    }
-                }
+                text = Parsers.RemoveImage(p.Key, text, Settings.Comment, "", out noChange);
                 if (!noChange)
                 {
-                    text = Regex.Replace(text, "<includeonly>[\\s\\r\\n]*\\</includeonly>", "");
+                    if (!string.IsNullOrEmpty(removed))
+                    {
+                        removed += ", ";
+                    }
+
+                    removed += Variables.Namespaces[Namespace.File] + p.Key;
                 }
             }
-
-            string editSummary = "";
-            if (Settings.AppendToEditSummary)
+            else
             {
-                if (!string.IsNullOrEmpty(replaced))
-                    editSummary = "replaced: " + replaced.Trim();
-
-                if (!string.IsNullOrEmpty(removed))
+                text = Parsers.ReplaceImage(p.Key, p.Value, text, out noChange);
+                if (!noChange)
                 {
-                    if (!string.IsNullOrEmpty(editSummary))
-                        editSummary += ", ";
+                    if (!string.IsNullOrEmpty(replaced))
+                    {
+                        replaced += ", ";
+                    }
 
-                    editSummary += "removed: " + removed.Trim();
+                    replaced += Variables.Namespaces[Namespace.File]
+                                + p.Key + FindandReplace.Arrow + Variables.Namespaces[Namespace.File] + p.Value;
                 }
             }
-            eventargs.EditSummary = editSummary;
-            eventargs.Skip = (text == eventargs.ArticleText) && Settings.Skip;
-
-            return text;
+            if (!noChange)
+            {
+                text = Regex.Replace(text, "<includeonly>[\\s\\r\\n]*\\</includeonly>", "");
+            }
         }
 
-        public void LoadSettings(object[] prefs)
+        string editSummary = "";
+        if (Settings.AppendToEditSummary)
         {
-            if (prefs == null) return;
+            if (!string.IsNullOrEmpty(replaced))
+                editSummary = "replaced: " + replaced.Trim();
 
-            foreach (object o in prefs)
+            if (!string.IsNullOrEmpty(removed))
             {
-                PrefsKeyPair p = o as PrefsKeyPair;
-                if (p == null) continue;
+                if (!string.IsNullOrEmpty(editSummary))
+                    editSummary += ", ";
 
-                switch (p.Name.ToLower())
-                {
-                    case "enabled":
-                        PluginEnabled = Settings.Enabled = (bool)p.Setting;
-                        break;
-                    case "comment":
-                        Settings.Comment = (bool)p.Setting;
-                        break;
-                    case "skip":
-                        Settings.Skip = (bool)p.Setting;
-                        break;
-                    case "appendtoeditsummary":
-                        Settings.AppendToEditSummary = (bool)p.Setting;
-                        break;
-                }
+                editSummary += "removed: " + removed.Trim();
             }
-            //Settings.Images = (Dictionary<string, string>)pkp.Setting;
         }
+        eventargs.EditSummary = editSummary;
+        eventargs.Skip = (text == eventargs.ArticleText) && Settings.Skip;
 
-          public object[] SaveSettings()
+        return text;
+    }
+
+    public void LoadSettings(object[] prefs)
+    {
+        if (prefs == null) return;
+
+        foreach (object o in prefs)
         {
-            Settings.Enabled = PluginEnabled;
+            PrefsKeyPair p = o as PrefsKeyPair;
+            if (p == null) continue;
+
+            switch (p.Name.ToLower())
+            {
+                case "enabled":
+                    PluginEnabled = Settings.Enabled = (bool)p.Setting;
+                    break;
+                case "comment":
+                    Settings.Comment = (bool)p.Setting;
+                    break;
+                case "skip":
+                    Settings.Skip = (bool)p.Setting;
+                    break;
+                case "appendtoeditsummary":
+                    Settings.AppendToEditSummary = (bool)p.Setting;
+                    break;
+            }
+        }
+        //Settings.Images = (Dictionary<string, string>)pkp.Setting;
+    }
+
+    public object[] SaveSettings()
+    {
+        Settings.Enabled = PluginEnabled;
             
-            return new PrefsKeyPair[] {
+        return new PrefsKeyPair[] {
             new PrefsKeyPair("Enabled", Settings.Enabled),
             new PrefsKeyPair("Comment", Settings.Comment),
             new PrefsKeyPair("Skip", Settings.Skip),
             new PrefsKeyPair("AppendToEditSummary", Settings.AppendToEditSummary) };
-        }
+    }
 
-        public void Reset()
-        {
-            //set default settings
-            Settings = new IfdSettings();
-            PluginEnabled = Settings.Enabled;
-        }
+    public void Reset()
+    {
+        //set default settings
+        Settings = new IfdSettings();
+        PluginEnabled = Settings.Enabled;
+    }
 
-        public void Nudge(out bool cancel) { cancel = false; }
-        public void Nudged(int nudges) { }
+    public void Nudge(out bool cancel) { cancel = false; }
+    public void Nudged(int nudges) { }
 
-        private static void ShowSettings(Object sender, EventArgs e)
-        { new IfdOptions().Show(); }
+    private static void ShowSettings(Object sender, EventArgs e)
+    { new IfdOptions().Show(); }
 
-        private bool PluginEnabled
-        {
-            get { return pluginenabledMenuItem.Checked; }
-            set { pluginenabledMenuItem.Checked = value; }
-        }
+    private bool PluginEnabled
+    {
+        get => pluginenabledMenuItem.Checked;
+        set => pluginenabledMenuItem.Checked = value;
+    }
 
-        private void PluginEnabledCheckedChange(object sender, EventArgs e)
-        {
-            Settings.Enabled = PluginEnabled;
-            AWB.NotifyBalloon(PluginEnabled ? "IFD plugin enabled" : "IFD plugin disabled", ToolTipIcon.Info);
-        }
+    private void PluginEnabledCheckedChange(object sender, EventArgs e)
+    {
+        Settings.Enabled = PluginEnabled;
+        AWB.NotifyBalloon(PluginEnabled ? "IFD plugin enabled" : "IFD plugin disabled", ToolTipIcon.Info);
+    }
 
-        private static void AboutMenuItemClicked(object sender, EventArgs e)
-        {
-            new AboutBox().Show();
-        }
+    private static void AboutMenuItemClicked(object sender, EventArgs e)
+    {
+        new AboutBox().Show();
     }
 }

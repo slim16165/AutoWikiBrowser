@@ -14,26 +14,25 @@ using System;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
-namespace AutoWikiBrowser.Plugins.Kingbotk.Components
+namespace AutoWikiBrowser.Plugins.Kingbotk.Components;
+
+/// <summary>
+/// A form which displays the configuration properties of a "generic template"
+/// </summary>
+internal sealed partial class GenericTemplatePropertiesForm
 {
-    /// <summary>
-    /// A form which displays the configuration properties of a "generic template"
-    /// </summary>
-    internal sealed partial class GenericTemplatePropertiesForm
+    public GenericTemplatePropertiesForm()
     {
-        public GenericTemplatePropertiesForm()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
 
-        private void OK_Button_Click(object sender, EventArgs e)
-        {
-            Close();
-        }
+    private void OK_Button_Click(object sender, EventArgs e)
+    {
+        Close();
+    }
 
-        internal static void DoRegexTextBox(TextBox txt, Regex regx)
-        {
-            txt.Text = regx == null ? "<not set>" : regx.ToString();
-        }
+    internal static void DoRegexTextBox(TextBox txt, Regex regx)
+    {
+        txt.Text = regx == null ? "<not set>" : regx.ToString();
     }
 }

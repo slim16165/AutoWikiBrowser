@@ -22,81 +22,62 @@ using System.Collections.Generic;
 using System.Net;
 using WikiFunctions.Plugin;
 
-namespace WikiFunctions.Plugins.ListMaker.BingSearch
+namespace WikiFunctions.Plugins.ListMaker.BingSearch;
+
+/// <summary>
+/// 
+/// </summary>
+/// <remarks>
+/// https://datamarket.azure.com/dataset/5ba839f1-12ce-4cce-bf57-a49d98d29a44
+/// 
+/// https://datamarket.azure.com/dataset/explore/getproxy/5ba839f1-12ce-4cce-bf57-a49d98d29a44
+/// http://go.microsoft.com/fwlink/?LinkID=248077
+/// http://go.microsoft.com/fwlink/?LinkID=252146
+/// http://go.microsoft.com/fwlink/?LinkID=252151
+/// </remarks>
+public class BingSearchListMakerPlugin : IListMakerPlugin
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <remarks>
-    /// https://datamarket.azure.com/dataset/5ba839f1-12ce-4cce-bf57-a49d98d29a44
-    /// 
-    /// https://datamarket.azure.com/dataset/explore/getproxy/5ba839f1-12ce-4cce-bf57-a49d98d29a44
-    /// http://go.microsoft.com/fwlink/?LinkID=248077
-    /// http://go.microsoft.com/fwlink/?LinkID=252146
-    /// http://go.microsoft.com/fwlink/?LinkID=252151
-    /// </remarks>
-    public class BingSearchListMakerPlugin : IListMakerPlugin
+    private const string AccountKey = "A3wH+TXilV1e0G5T7RF3XuznfxoOMkcgpo3pxKo49xY=";
+
+    public List<Article> MakeList(params string[] searchCriteria)
     {
-        private const string AccountKey = "A3wH+TXilV1e0G5T7RF3XuznfxoOMkcgpo3pxKo49xY=";
+        List<Article> articles = new List<Article>();
+        var bingContainer = new Bing.BingSearchContainer(new Uri("https://api.datamarket.azure.com/Bing/Search/"))
+            { Credentials = new NetworkCredential(AccountKey, AccountKey) };
 
-        public List<Article> MakeList(params string[] searchCriteria)
-        {
-            List<Article> articles = new List<Article>();
-            var bingContainer = new Bing.BingSearchContainer(new Uri("https://api.datamarket.azure.com/Bing/Search/"))
-                { Credentials = new NetworkCredential(AccountKey, AccountKey) };
+        throw new NotImplementedException();
+        //foreach (string s in searchCriteria)
+        //{
+        //    var searchQuery = bingContainer.Web($"{s}({Variables.URL})", null, null, null, null, null, null, null);
+        //    var searchResults = searchQuery.Execute();
+        //    if (searchResults == null)
+        //    {
+        //        continue;
+        //    }
 
-            throw new NotImplementedException();
-            //foreach (string s in searchCriteria)
-            //{
-            //    var searchQuery = bingContainer.Web($"{s}({Variables.URL})", null, null, null, null, null, null, null);
-            //    var searchResults = searchQuery.Execute();
-            //    if (searchResults == null)
-            //    {
-            //        continue;
-            //    }
+        //    foreach (var result in searchResults)
+        //    {
+        //        articles.Add(new Article(result.Title));
+        //        Console.WriteLine(result.Title);
+        //    }
+        //}
 
-            //    foreach (var result in searchResults)
-            //    {
-            //        articles.Add(new Article(result.Title));
-            //        Console.WriteLine(result.Title);
-            //    }
-            //}
-
-            return articles;
-        }
-
-        public string DisplayText
-        {
-            get { return "Bing Search"; }
-        }
-
-        public string UserInputTextBoxText
-        {
-            get { return "Bing Search:"; }
-        }
-
-        public bool UserInputTextBoxEnabled
-        {
-            get { return true; }
-        }
-
-        public void Selected()
-        {
-        }
-
-        public bool RunOnSeparateThread
-        {
-            get { return true; }
-        }
-
-        public string Name
-        {
-            get { return "Bing Search Plugin"; }
-        }
-
-        public virtual bool StripUrl
-        {
-            get { return false; }
-        }
+        return articles;
     }
+
+    public string DisplayText => "Bing Search";
+
+    public string UserInputTextBoxText => "Bing Search:";
+
+    public bool UserInputTextBoxEnabled => true;
+
+    public void Selected()
+    {
+    }
+
+    public bool RunOnSeparateThread => true;
+
+    public string Name => "Bing Search Plugin";
+
+    public virtual bool StripUrl => false;
 }

@@ -25,90 +25,79 @@ using System.Windows.Forms;
 using WikiFunctions.Plugin;
 
 
-namespace WikiFunctions.Plugins.ListMaker.TypoScan
+namespace WikiFunctions.Plugins.ListMaker.TypoScan;
+
+/// <summary>
+/// Gets 100 pages from the TypoScan server
+/// </summary>
+public class TypoScanListMakerPlugin : IListMakerPlugin
 {
-    /// <summary>
-    /// Gets 100 pages from the TypoScan server
-    /// </summary>
-    public class TypoScanListMakerPlugin : IListMakerPlugin
+    protected int Count = 100;
+
+    public virtual string Name => "TypoScan ListMaker Plugin";
+
+    public List<Article> MakeList(params string[] searchCriteria)
     {
-        protected int Count = 100;
+        List<Article> articles = new List<Article>();
 
-        public virtual string Name
+        using (
+            XmlTextReader reader =
+            new XmlTextReader(new StringReader(Tools.GetHTML(Common.GetUrlFor("displayarticles") + "&count=" + Count))))
         {
-            get { return "TypoScan ListMaker Plugin"; }
-        }
-
-        public List<Article> MakeList(params string[] searchCriteria)
-        {
-            List<Article> articles = new List<Article>();
-
-            using (
-                XmlTextReader reader =
-                    new XmlTextReader(new StringReader(Tools.GetHTML(Common.GetUrlFor("displayarticles") + "&count=" + Count))))
+            while (reader.Read())
             {
-                while (reader.Read())
+                if (reader.Name.Equals("site"))
                 {
-                    if (reader.Name.Equals("site"))
-                    {
-                        reader.MoveToAttribute("address");
-                        string site = reader.Value;
+                    reader.MoveToAttribute("address");
+                    string site = reader.Value;
 
-                        if (site != Common.GetSite())
-                            //Probably shouldnt get this as the wanted site was sent to the server
-                        {
-                            MessageBox.Show("Wrong Site");
-                            return articles;
-                        }
-                    }
-                    else if (reader.Name.Equals("article"))
+                    if (site != Common.GetSite())
+                        //Probably shouldnt get this as the wanted site was sent to the server
                     {
-                        reader.MoveToAttribute("id");
-                        int id = int.Parse(reader.Value);
-                        string title = reader.ReadString();
-                        articles.Add(new Article(title));
-                        if (!TypoScanBasePlugin.PageList.ContainsKey(title))
-                            TypoScanBasePlugin.PageList.Add(title, id);
+                        MessageBox.Show("Wrong Site");
+                        return articles;
                     }
                 }
+                else if (reader.Name.Equals("article"))
+                {
+                    reader.MoveToAttribute("id");
+                    int id = int.Parse(reader.Value);
+                    string title = reader.ReadString();
+                    articles.Add(new Article(title));
+                    if (!TypoScanBasePlugin.PageList.ContainsKey(title))
+                        TypoScanBasePlugin.PageList.Add(title, id);
+                }
             }
-            TypoScanBasePlugin.CheckoutTime = DateTime.Now;
-            return articles;
         }
-
-        public virtual string DisplayText
-        { get { return "TypoScan"; } }
-
-        public string UserInputTextBoxText
-        { get { return ""; } }
-
-        public bool UserInputTextBoxEnabled
-        { get { return false; } }
-
-        public void Selected()
-        { }
-
-        public bool RunOnSeparateThread
-        { get { return true; } }
-
-        public virtual bool StripUrl
-        { get { return false; } }
+        TypoScanBasePlugin.CheckoutTime = DateTime.Now;
+        return articles;
     }
 
-    /// <summary>
-    /// Gets 500 TypoScan pages
-    /// </summary>
-    public class TypoScanListMakerPlugin500 : TypoScanListMakerPlugin
+    public virtual string DisplayText => "TypoScan";
+
+    public string UserInputTextBoxText => "";
+
+    public bool UserInputTextBoxEnabled => false;
+
+    public void Selected()
+    { }
+
+    public bool RunOnSeparateThread => true;
+
+    public virtual bool StripUrl => false;
+}
+
+/// <summary>
+/// Gets 500 TypoScan pages
+/// </summary>
+public class TypoScanListMakerPlugin500 : TypoScanListMakerPlugin
+{
+    public TypoScanListMakerPlugin500()
     {
-        public TypoScanListMakerPlugin500()
-        {
-            Count = 500;
-        }
-
-        public override string DisplayText
-        { get { return base.DisplayText + " (500 pages)"; } }
-
-        public override string Name
-        { get { return base.Name + " 500"; } }
+        Count = 500;
     }
+
+    public override string DisplayText => base.DisplayText + " (500 pages)";
+
+    public override string Name => base.Name + " 500";
 }

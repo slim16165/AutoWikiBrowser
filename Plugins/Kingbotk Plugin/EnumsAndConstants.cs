@@ -12,72 +12,71 @@ You should have received a copy of the GNU General Public License Version 2 alon
 
 using System.Text.RegularExpressions;
 
-namespace AutoWikiBrowser.Plugins.Kingbotk
+namespace AutoWikiBrowser.Plugins.Kingbotk;
+
+internal enum SkipResults
 {
-    internal enum SkipResults
-    {
-        NotSet = -1,
-        //Processed = 0
-        SkipNoChange = 1,
-        SkipBadTag,
-        SkipRegex
-    }
+    NotSet = -1,
+    //Processed = 0
+    SkipNoChange = 1,
+    SkipBadTag,
+    SkipRegex
+}
 
-    internal enum Classification
-    {
-        Unassessed = 0,
-        Stub,
-        Start,
-        C,
-        B,
-        GA,
-        A,
-        FA,
-        NA,
-        Dab,
-        List,
-        FL,
-        Code = 100
-    }
+internal enum Classification
+{
+    Unassessed = 0,
+    Stub,
+    Start,
+    C,
+    B,
+    GA,
+    A,
+    FA,
+    NA,
+    Dab,
+    List,
+    FL,
+    Code = 100
+}
 
-    internal enum Importance
-    {
-        Unassessed = 0,
-        Low,
-        Mid,
-        High,
-        Top,
-        NA,
-        Code = 100
-    }
+internal enum Importance
+{
+    Unassessed = 0,
+    Low,
+    Mid,
+    High,
+    Top,
+    NA,
+    Code = 100
+}
 
-    internal enum ProcessTalkPageMode
-    {
-        Normal,
-        ManualAssessment,
-        NonStandardTalk
-    }
+internal enum ProcessTalkPageMode
+{
+    Normal,
+    ManualAssessment,
+    NonStandardTalk
+}
 
-    internal static class Constants
-    {
-        // Regular expression strings:
-        internal const string TemplatePrefix = "\\{\\{\\s*(?<tl>template *:)?\\s*";
-        // put "(?<!<nowiki[\n\r]*>\s*)" at the start to ignore nowiki, but was difficult to get secondchanceregex adapted (without becoming too strict) so I gave up. It seemed the engine was trying to do it's best to *avoid* matching this negative group
-        internal const string RegexpLeft = TemplatePrefix + "(?<tlname>";
-        // put "\s(?!</nowiki[\n\r]*>)" at the end to ignore nowiki
-        internal const string RegexpRight =
-            ")\\b\\s*(((\\|\\|*| \\||\\| |\\s*\\|\\s*(?<parm>[^}{|\\s=]*))\\s*)+(=\\s*(?<val>[^}{|\\n\\r]*?)\\s*)?)*\\}\\}\\s*";
+internal static class Constants
+{
+    // Regular expression strings:
+    internal const string TemplatePrefix = "\\{\\{\\s*(?<tl>template *:)?\\s*";
+    // put "(?<!<nowiki[\n\r]*>\s*)" at the start to ignore nowiki, but was difficult to get secondchanceregex adapted (without becoming too strict) so I gave up. It seemed the engine was trying to do it's best to *avoid* matching this negative group
+    internal const string RegexpLeft = TemplatePrefix + "(?<tlname>";
+    // put "\s(?!</nowiki[\n\r]*>)" at the end to ignore nowiki
+    internal const string RegexpRight =
+        ")\\b\\s*(((\\|\\|*| \\||\\| |\\s*\\|\\s*(?<parm>[^}{|\\s=]*))\\s*)+(=\\s*(?<val>[^}{|\\n\\r]*?)\\s*)?)*\\}\\}\\s*";
 
-        // ")\b[^}]*"
-        internal const string RegexpRightNotStrict = ")\\b";
+    // ")\b[^}]*"
+    internal const string RegexpRightNotStrict = ")\\b";
 
-        internal const RegexOptions RegexpOptions =
-            RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture;
+    internal const RegexOptions RegexpOptions =
+        RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture;
 
-        // Identifiers:
-        internal const string WikiPlugin = "[[WP:Plugin++|Plugin++]]";
-        internal const string AWBPluginName = "Kingbotk Plugin";
-        // Placeholders:
-        internal const string TemplaterPlaceholder = "{{xxxTEMPLATExxx}}";
-    }
+    // Identifiers:
+    internal const string WikiPlugin = "[[WP:Plugin++|Plugin++]]";
+    internal const string AWBPluginName = "Kingbotk Plugin";
+    // Placeholders:
+    internal const string TemplaterPlaceholder = "{{xxxTEMPLATExxx}}";
 }

@@ -19,17 +19,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 using WikiFunctions.Plugin;
 using WikiFunctions.Logging;
 
-namespace AutoWikiBrowser
+namespace AutoWikiBrowser;
+
+partial class MainForm
 {
-    partial class MainForm
-    {
-        // Objects:
-        TraceManager IAutoWikiBrowser.TraceManager { get { return Program.MyTrace; } }
+    // Objects:
+    TraceManager IAutoWikiBrowser.TraceManager => Program.MyTrace;
 
-        bool IAutoWikiBrowser.SkipNoChanges { get { return chkSkipNoChanges.Checked; } set { chkSkipNoChanges.Checked = value; } }
-
-        WikiFunctions.Parse.FindandReplace IAutoWikiBrowser.FindandReplace { get { return FindAndReplace; } }
-        WikiFunctions.SubstTemplates IAutoWikiBrowser.SubstTemplates { get { return SubstTemplates; } }
-        string IAutoWikiBrowser.CustomModule { get { return (CModule.ModuleUsable) ? CModule.Code : null; } }
+    bool IAutoWikiBrowser.SkipNoChanges { get => chkSkipNoChanges.Checked;
+        set => chkSkipNoChanges.Checked = value;
     }
+
+    WikiFunctions.Parse.FindandReplace IAutoWikiBrowser.FindandReplace => FindAndReplace;
+    WikiFunctions.SubstTemplates IAutoWikiBrowser.SubstTemplates => SubstTemplates;
+    string IAutoWikiBrowser.CustomModule => (CModule.ModuleUsable) ? CModule.Code : null;
 }

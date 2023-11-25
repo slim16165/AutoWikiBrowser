@@ -1,9 +1,8 @@
-namespace AutoWikiBrowser.Plugins.Kingbotk
+namespace AutoWikiBrowser.Plugins.Kingbotk;
+
+public class TemplateParameters
 {
-    public class TemplateParameters
-    {
-        public string StorageKey;
-        public string Group;
-        public string ParamName;
-    }
+    public string StorageKey;
+    public string Group;
+    public string ParamName;
 }

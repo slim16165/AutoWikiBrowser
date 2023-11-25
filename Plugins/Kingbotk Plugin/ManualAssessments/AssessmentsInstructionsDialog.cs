@@ -13,20 +13,19 @@ You should have received a copy of the GNU General Public License Version 2 alon
 using System;
 using System.Windows.Forms;
 
-namespace AutoWikiBrowser.Plugins.Kingbotk.ManualAssessments
+namespace AutoWikiBrowser.Plugins.Kingbotk.ManualAssessments;
+
+internal sealed partial class AssessmentsInstructionsDialog
 {
-    internal sealed partial class AssessmentsInstructionsDialog
+    private void OK_Button_Click(object sender, EventArgs e)
     {
-        private void OK_Button_Click(object sender, EventArgs e)
-        {
-            DialogResult = CheckBox1.Checked ? DialogResult.Yes : DialogResult.OK;
+        DialogResult = CheckBox1.Checked ? DialogResult.Yes : DialogResult.OK;
 
-            Close();
-        }
+        Close();
+    }
 
-        public AssessmentsInstructionsDialog()
-        {
-            InitializeComponent();
-        }
+    public AssessmentsInstructionsDialog()
+    {
+        InitializeComponent();
     }
 }

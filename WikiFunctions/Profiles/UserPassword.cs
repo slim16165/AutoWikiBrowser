@@ -19,23 +19,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 using System.Windows.Forms;
 
-namespace WikiFunctions.Profiles
+namespace WikiFunctions.Profiles;
+
+public partial class UserPassword : Form
 {
-    public partial class UserPassword : Form
+    public UserPassword()
     {
-        public UserPassword()
-        {
-            InitializeComponent();
-        }
-
-        public string Username
-        {
-            set { lblText.Text = string.Format(lblText.Text, value); }
-        }
-
-        public string GetPassword
-        {
-            get { return txtPassword.Text; }
-        }
+        InitializeComponent();
     }
+
+    public string Username
+    {
+        set => lblText.Text = string.Format(lblText.Text, value);
+    }
+
+    public string GetPassword => txtPassword.Text;
 }

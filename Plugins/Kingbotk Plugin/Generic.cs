@@ -35,50 +35,23 @@ namespace AutoWikiBrowser.Plugins.Kingbotk.Plugins
 
         #region "Parameter Names"
 
-        private string TemplateNameParm
-        {
-            get { return _name + "GenericTemplateName"; }
-        }
+        private string TemplateNameParm => _name + "GenericTemplateName";
 
-        private string TemplateAlternateNamesYNParm
-        {
-            get { return _name + "GenericTemplateAlternateNamesYN"; }
-        }
+        private string TemplateAlternateNamesYNParm => _name + "GenericTemplateAlternateNamesYN";
 
-        private string TemplateAlternateNamesParm
-        {
-            get { return _name + "GenericTemplateAlternateNames"; }
-        }
+        private string TemplateAlternateNamesParm => _name + "GenericTemplateAlternateNames";
 
-        private string TemplateImportanceParm
-        {
-            get { return _name + "GenericTemplateImp"; }
-        }
+        private string TemplateImportanceParm => _name + "GenericTemplateImp";
 
-        private string TemplateAutoStubYNParm
-        {
-            get { return _name + "GenericTemplateAutoStubYN"; }
-        }
+        private string TemplateAutoStubYNParm => _name + "GenericTemplateAutoStubYN";
 
-        private string conSkipRegexYN
-        {
-            get { return _name + "GenericSkipRegexYN"; }
-        }
+        private string conSkipRegexYN => _name + "GenericSkipRegexYN";
 
-        private string conSkipRegex
-        {
-            get { return _name + "GenericSkipRegex"; }
-        }
+        private string conSkipRegex => _name + "GenericSkipRegex";
 
-        private string AutoStubParm
-        {
-            get { return _name + "GenericAutoStub"; }
-        }
+        private string AutoStubParm => _name + "GenericAutoStub";
 
-        private string StubClassParm
-        {
-            get { return _name + "GenericStubClass"; }
-        }
+        private string StubClassParm => _name + "GenericStubClass";
 
         #endregion
 
@@ -86,20 +59,20 @@ namespace AutoWikiBrowser.Plugins.Kingbotk.Plugins
 
         internal string TemplateName
         {
-            get { return Tools.GetTemplateName(TemplateNameTextBox.Text); }
-            set { TemplateNameTextBox.Text = value; }
+            get => Tools.GetTemplateName(TemplateNameTextBox.Text);
+            set => TemplateNameTextBox.Text = value;
         }
 
         internal bool HasAlternateNames
         {
-            get { return HasAlternateNamesCheckBox.Checked; }
-            set { HasAlternateNamesCheckBox.Checked = value; }
+            get => HasAlternateNamesCheckBox.Checked;
+            set => HasAlternateNamesCheckBox.Checked = value;
         }
 
         internal string AlternateNames
         {
             get { return AlternateNamesTextBox.Text.Trim(new[] {Convert.ToChar("|"), Convert.ToChar(" ")}); }
-            set { AlternateNamesTextBox.Text = value; }
+            set => AlternateNamesTextBox.Text = value;
         }
 
         internal ImportanceSettingEnum ImportanceSetting
@@ -113,42 +86,42 @@ namespace AutoWikiBrowser.Plugins.Kingbotk.Plugins
 
                 return (ImportanceSettingEnum) ImportanceCheckedListBox.CheckedIndices[0];
             }
-            set { ImportanceCheckedListBox.SetItemChecked((int) value, true); }
+            set => ImportanceCheckedListBox.SetItemChecked((int) value, true);
         }
 
         internal string SkipRegex
         {
-            get { return SkipRegexTextBox.Text.Trim(); }
-            set { SkipRegexTextBox.Text = value; }
+            get => SkipRegexTextBox.Text.Trim();
+            set => SkipRegexTextBox.Text = value;
         }
 
         internal bool SkipRegexYN
         {
-            get { return SkipRegexCheckBox.Checked; }
-            set { SkipRegexCheckBox.Checked = value; }
+            get => SkipRegexCheckBox.Checked;
+            set => SkipRegexCheckBox.Checked = value;
         }
 
         internal bool AutoStubYN
         {
-            get { return AutoStubSupportYNCheckBox.Checked; }
-            set { AutoStubSupportYNCheckBox.Checked = value; }
+            get => AutoStubSupportYNCheckBox.Checked;
+            set => AutoStubSupportYNCheckBox.Checked = value;
         }
 
         public bool StubClass
         {
-            get { return StubClassCheckBox.Checked; }
-            set { StubClassCheckBox.Checked = value; }
+            get => StubClassCheckBox.Checked;
+            set => StubClassCheckBox.Checked = value;
         }
 
         public bool AutoStub
         {
-            get { return AutoStubCheckBox.Checked & AutoStubSupportYNCheckBox.Checked; }
-            set { AutoStubCheckBox.Checked = AutoStubYN && value; }
+            get => AutoStubCheckBox.Checked & AutoStubSupportYNCheckBox.Checked;
+            set => AutoStubCheckBox.Checked = AutoStubYN && value;
         }
 
         public bool StubClassModeAllowed
         {
-            set { StubClassCheckBox.Enabled = value; }
+            set => StubClassCheckBox.Enabled = value;
         }
 
         #endregion
@@ -272,10 +245,7 @@ namespace AutoWikiBrowser.Plugins.Kingbotk.Plugins
         // Settings:
         private readonly string _ourName;
 
-        private string conEnabled
-        {
-            get { return _ourName + "GenericEnabled"; }
-        }
+        private string conEnabled => _ourName + "GenericEnabled";
 
         // Regex:
 
@@ -327,20 +297,11 @@ namespace AutoWikiBrowser.Plugins.Kingbotk.Plugins
             }
         }
 
-        protected internal override bool AmGeneric
-        {
-            get { return true; }
-        }
+        protected internal override bool AmGeneric => true;
 
-        protected internal override string PluginShortName
-        {
-            get { return "Generic (" + _ourName + ")"; }
-        }
+        protected internal override string PluginShortName => "Generic (" + _ourName + ")";
 
-        protected override string PreferredTemplateName
-        {
-            get { return _ourSettingsControl.TemplateName; }
-        }
+        protected override string PreferredTemplateName => _ourSettingsControl.TemplateName;
 
         protected override void ImportanceParameter(Importance importance)
         {
@@ -356,10 +317,7 @@ namespace AutoWikiBrowser.Plugins.Kingbotk.Plugins
             }
         }
 
-        protected internal override IGenericSettings GenericSettings
-        {
-            get { return _ourSettingsControl; }
-        }
+        protected internal override IGenericSettings GenericSettings => _ourSettingsControl;
 
         // Article processing:
         protected override bool SkipIfContains()
@@ -453,10 +411,7 @@ namespace AutoWikiBrowser.Plugins.Kingbotk.Plugins
             Dispose();
         }
 
-        public string GenericTemplateKey
-        {
-            get { return _ourName; }
-        }
+        public string GenericTemplateKey => _ourName;
 
         // Settings control event handlers:
         private void SkipRegexChanged(object sender, EventArgs e)
@@ -567,10 +522,7 @@ namespace AutoWikiBrowser.Plugins.Kingbotk.Plugins
         }
 
         // Misc:
-        internal override bool HasReqPhotoParam
-        {
-            get { return false; }
-        }
+        internal override bool HasReqPhotoParam => false;
 
         internal override void ReqPhoto()
         {

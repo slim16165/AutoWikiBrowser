@@ -14,172 +14,171 @@ using System;
 using System.Collections.Generic;
 using WikiFunctions;
 
-namespace AutoWikiBrowser.Plugins.Kingbotk
+namespace AutoWikiBrowser.Plugins.Kingbotk;
+
+/// <summary>
+/// An object which wraps around a collection of template parameters
+/// </summary>
+internal sealed class Templating
 {
+    internal bool FoundTemplate;
+    internal bool BadTemplate;
+
+    internal Dictionary<string, TemplateParametersObject> Parameters =
+        new Dictionary<string, TemplateParametersObject>();
+
     /// <summary>
-    /// An object which wraps around a collection of template parameters
+    /// Store a parameter from the exploded on-page template into the Parameters collection
     /// </summary>
-    internal sealed class Templating
+    internal void AddTemplateParmFromExistingTemplate(string parameterName, string parameterValue)
     {
-        internal bool FoundTemplate;
-        internal bool BadTemplate;
-
-        internal Dictionary<string, TemplateParametersObject> Parameters =
-            new Dictionary<string, TemplateParametersObject>();
-
-        /// <summary>
-        /// Store a parameter from the exploded on-page template into the Parameters collection
-        /// </summary>
-        internal void AddTemplateParmFromExistingTemplate(string parameterName, string parameterValue)
+        // Let's merge duplicates when one or both is empty:
+        if (Parameters.ContainsKey(parameterName))
         {
-            // Let's merge duplicates when one or both is empty:
-            if (Parameters.ContainsKey(parameterName))
+            // This code is very similar to ReplaceTemplateParm(), but that is for programmatic changes (i.e. not
+            // from template), needs an Article object, doesn't understand empty new values, and doesn't report
+            // bad tags. Turned out to be easier to rewrite here than to modify it.
+            if (Parameters[parameterName].Value != parameterValue)
             {
-                // This code is very similar to ReplaceTemplateParm(), but that is for programmatic changes (i.e. not
-                // from template), needs an Article object, doesn't understand empty new values, and doesn't report
-                // bad tags. Turned out to be easier to rewrite here than to modify it.
-                if (Parameters[parameterName].Value != parameterValue)
+                // existing value is empty, overwrite with new
+                if (string.IsNullOrEmpty(Parameters[parameterName].Value))
                 {
-                    // existing value is empty, overwrite with new
-                    if (string.IsNullOrEmpty(Parameters[parameterName].Value))
-                    {
-                        Parameters[parameterName].Value = parameterValue;
-                    }
-                    else if (!string.IsNullOrEmpty(parameterValue))
-                    {
-                        BadTemplate = true;
-                    }
+                    Parameters[parameterName].Value = parameterValue;
+                }
+                else if (!string.IsNullOrEmpty(parameterValue))
+                {
+                    BadTemplate = true;
                 }
             }
-            else
-            {
-                Parameters.Add(parameterName, new TemplateParametersObject(parameterValue));
-            }
         }
-
-        internal void NewTemplateParm(string parameterName, string parameterValue)
+        else
         {
             Parameters.Add(parameterName, new TemplateParametersObject(parameterValue));
         }
+    }
 
-        internal void NewTemplateParm(string parameterName, string parameterValue, bool logItAndUpdateEditSummary,
-            Article theArticle, bool minorEdit = false)
+    internal void NewTemplateParm(string parameterName, string parameterValue)
+    {
+        Parameters.Add(parameterName, new TemplateParametersObject(parameterValue));
+    }
+
+    internal void NewTemplateParm(string parameterName, string parameterValue, bool logItAndUpdateEditSummary,
+        Article theArticle, bool minorEdit = false)
+    {
+        NewTemplateParm(parameterName, parameterValue);
+        if (logItAndUpdateEditSummary)
+            theArticle.ParameterAdded(parameterName, parameterValue, minorEdit);
+    }
+
+    /// <summary>
+    /// Checks for the existence of a parameter and adds it if missing/optionally changes it
+    /// </summary>
+    /// <returns>True if made a change</returns>
+    internal bool NewOrReplaceTemplateParm(string parameterName, string parameterValue, Article theArticle,
+        bool logItAndUpdateEditSummary, bool paramHasAlternativeName, bool dontChangeIfSet = false,
+        string paramAlternativeName = "", bool minorEditOnlyIfAdding = false)
+    {
+        bool res;
+
+        if (Parameters.ContainsKey(parameterName))
         {
-            NewTemplateParm(parameterName, parameterValue);
-            if (logItAndUpdateEditSummary)
-                theArticle.ParameterAdded(parameterName, parameterValue, minorEdit);
+            res = ReplaceTemplateParm(parameterName, parameterValue, theArticle, logItAndUpdateEditSummary,
+                dontChangeIfSet);
+        }
+        else if (paramHasAlternativeName && Parameters.ContainsKey(paramAlternativeName))
+        {
+            res = ReplaceTemplateParm(paramAlternativeName, parameterValue, theArticle, logItAndUpdateEditSummary,
+                dontChangeIfSet);
+            // Doesn't contain parameter
+        }
+        else
+        {
+            NewTemplateParm(parameterName, parameterValue, logItAndUpdateEditSummary, theArticle, minorEditOnlyIfAdding);
+
+            if (minorEditOnlyIfAdding)
+                theArticle.ArticleHasAMinorChange();
+            else
+                theArticle.ArticleHasAMajorChange();
+            return true;
         }
 
-        /// <summary>
-        /// Checks for the existence of a parameter and adds it if missing/optionally changes it
-        /// </summary>
-        /// <returns>True if made a change</returns>
-        internal bool NewOrReplaceTemplateParm(string parameterName, string parameterValue, Article theArticle,
-            bool logItAndUpdateEditSummary, bool paramHasAlternativeName, bool dontChangeIfSet = false,
-            string paramAlternativeName = "", bool minorEditOnlyIfAdding = false)
+        if (res)
+            theArticle.ArticleHasAMajorChange();
+        return res;
+    }
+
+    private bool ReplaceTemplateParm(string parameterName, string parameterValue, Article theArticle,
+        bool logItAndUpdateEditSummary, bool dontChangeIfSet)
+    {
+        string existingValue = WikiRegexes.Comments.Replace(Parameters[parameterName].Value, "").Trim();
+        // trim still needed because altho main regex shouldn't give us spaces at the end of vals any more, the .Replace here might
+
+        // Contains parameter with a different value
+        if (existingValue != parameterValue)
         {
-            bool res;
+            // Contains parameter with a different value, and _
+            if (string.IsNullOrEmpty(existingValue) || !dontChangeIfSet)
+            {
+                // we want to change it; or contains an empty parameter
+                Parameters[parameterName].Value = parameterValue;
+                theArticle.ArticleHasAMajorChange();
+                if (logItAndUpdateEditSummary)
+                {
+                    if (string.IsNullOrEmpty(existingValue))
+                    {
+                        theArticle.ParameterAdded(parameterName, parameterValue);
+                    }
+                    else
+                    {
+                        theArticle.DoneReplacement(parameterName + "=" + existingValue, parameterValue);
+                    }
+                }
 
-            if (Parameters.ContainsKey(parameterName))
-            {
-                res = ReplaceTemplateParm(parameterName, parameterValue, theArticle, logItAndUpdateEditSummary,
-                    dontChangeIfSet);
+                return true;
+                // Contains param with a different value, and we don't want to change it
             }
-            else if (paramHasAlternativeName && Parameters.ContainsKey(paramAlternativeName))
-            {
-                res = ReplaceTemplateParm(paramAlternativeName, parameterValue, theArticle, logItAndUpdateEditSummary,
-                    dontChangeIfSet);
-                // Doesn't contain parameter
-            }
-            else
-            {
-                NewTemplateParm(parameterName, parameterValue, logItAndUpdateEditSummary, theArticle, minorEditOnlyIfAdding);
+        }
 
-                if (minorEditOnlyIfAdding)
-                    theArticle.ArticleHasAMinorChange();
-                else
-                    theArticle.ArticleHasAMajorChange();
+        // Else: Already contains parameter and correct value; no need to change
+        return false;
+    }
+
+    internal string ParametersToString(string parameterBreak)
+    {
+        string res = "";
+        foreach (KeyValuePair<string, TemplateParametersObject> o in Parameters)
+        {
+            res += "|" + o.Key + "=" + o.Value.Value + parameterBreak;
+        }
+
+        res += "}}" + Environment.NewLine;
+        return res;
+    }
+
+    internal bool HasYesParamLowerOrTitleCase(bool yes, string paramName)
+    {
+        // HACK: A little hack to ensure we don't change no to No or yes to Yes as our only edit, and also for checking "yes" values
+        if (Parameters.ContainsKey(paramName))
+        {
+            if (yes && Parameters[paramName].Value.ToLower().Equals("yes") || !yes && Parameters[paramName].Value.ToLower().Equals("no"))
+            {
                 return true;
             }
-
-            if (res)
-                theArticle.ArticleHasAMajorChange();
-            return res;
         }
 
-        private bool ReplaceTemplateParm(string parameterName, string parameterValue, Article theArticle,
-            bool logItAndUpdateEditSummary, bool dontChangeIfSet)
+        return false;
+    }
+
+    /// <summary>
+    /// An object which represents a template parameter
+    /// </summary>
+    internal sealed class TemplateParametersObject
+    {
+        internal string Value;
+
+        internal TemplateParametersObject(string parameterValue)
         {
-            string existingValue = WikiRegexes.Comments.Replace(Parameters[parameterName].Value, "").Trim();
-            // trim still needed because altho main regex shouldn't give us spaces at the end of vals any more, the .Replace here might
-
-            // Contains parameter with a different value
-            if (existingValue != parameterValue)
-            {
-                // Contains parameter with a different value, and _
-                if (string.IsNullOrEmpty(existingValue) || !dontChangeIfSet)
-                {
-                    // we want to change it; or contains an empty parameter
-                    Parameters[parameterName].Value = parameterValue;
-                    theArticle.ArticleHasAMajorChange();
-                    if (logItAndUpdateEditSummary)
-                    {
-                        if (string.IsNullOrEmpty(existingValue))
-                        {
-                            theArticle.ParameterAdded(parameterName, parameterValue);
-                        }
-                        else
-                        {
-                            theArticle.DoneReplacement(parameterName + "=" + existingValue, parameterValue);
-                        }
-                    }
-
-                    return true;
-                    // Contains param with a different value, and we don't want to change it
-                }
-            }
-
-            // Else: Already contains parameter and correct value; no need to change
-            return false;
-        }
-
-        internal string ParametersToString(string parameterBreak)
-        {
-            string res = "";
-            foreach (KeyValuePair<string, TemplateParametersObject> o in Parameters)
-            {
-                res += "|" + o.Key + "=" + o.Value.Value + parameterBreak;
-            }
-
-            res += "}}" + Environment.NewLine;
-            return res;
-        }
-
-        internal bool HasYesParamLowerOrTitleCase(bool yes, string paramName)
-        {
-            // HACK: A little hack to ensure we don't change no to No or yes to Yes as our only edit, and also for checking "yes" values
-            if (Parameters.ContainsKey(paramName))
-            {
-                if (yes && Parameters[paramName].Value.ToLower().Equals("yes") || !yes && Parameters[paramName].Value.ToLower().Equals("no"))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// An object which represents a template parameter
-        /// </summary>
-        internal sealed class TemplateParametersObject
-        {
-            internal string Value;
-
-            internal TemplateParametersObject(string parameterValue)
-            {
-                Value = parameterValue;
-            }
+            Value = parameterValue;
         }
     }
 }

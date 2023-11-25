@@ -1,32 +1,26 @@
 ﻿using System.CodeDom.Compiler;
 
-namespace WikiFunctions.CustomModules
+namespace WikiFunctions.CustomModules;
+
+public class VbModuleCompiler : CustomModuleCompiler
 {
-    public class VbModuleCompiler : CustomModuleCompiler
+    public VbModuleCompiler()
     {
-        public VbModuleCompiler()
-        {
-            // For compatibility reasons we can't not use the Microsoft.VisualBasic
-            // namespace directly, as some Linux systems may come without the mono-vbnc package,
-            // and this may result in "assembly not found" exception where it could be avoided.
+        // For compatibility reasons we can't not use the Microsoft.VisualBasic
+        // namespace directly, as some Linux systems may come without the mono-vbnc package,
+        // and this may result in "assembly not found" exception where it could be avoided.
 
-            // We assume here that VBCodeProvider is in the same DLL as Component (System.dll) for
-            // Windows. Seems to be the case for Mono on Linux, too.
-            var asm = typeof(System.ComponentModel.Component).Assembly;
+        // We assume here that VBCodeProvider is in the same DLL as Component (System.dll) for
+        // Windows. Seems to be the case for Mono on Linux, too.
+        var asm = typeof(System.ComponentModel.Component).Assembly;
 
-            Compiler = (CodeDomProvider)Instantiate(asm, "Microsoft.VisualBasic.VBCodeProvider");
-        }
+        Compiler = (CodeDomProvider)Instantiate(asm, "Microsoft.VisualBasic.VBCodeProvider");
+    }
 
-        public override string Name
-        {
-            get { return "VB.NET 2.0"; }
-        }
+    public override string Name => "VB.NET 2.0";
 
-        public override string CodeStart
-        {
-            get
-            {
-                return @"Imports System
+    public override string CodeStart =>
+        @"Imports System
 Imports System.Collections.Generic
 Imports System.Text
 Imports System.Text.RegularExpressions
@@ -43,23 +37,13 @@ Namespace AutoWikiBrowser.CustomModules
             awb = _awb
         End Sub
 ";
-            }
-        }
 
-        public override string CodeEnd
-        {
-            get
-            {
-                return @"     End Class
+    public override string CodeEnd =>
+        @"     End Class
 End Namespace";
-            }
-        }
 
-        public override string CodeExample
-        {
-            get
-            {
-                return @"        Public Function ProcessArticle(ByVal ArticleText As String, ByVal ArticleTitle As String, ByVal wikiNamespace As Integer, ByRef Summary As String, ByRef Skip As Boolean) As String Implements WikiFunctions.Plugin.IModule.ProcessArticle
+    public override string CodeExample =>
+        @"        Public Function ProcessArticle(ByVal ArticleText As String, ByVal ArticleTitle As String, ByVal wikiNamespace As Integer, ByRef Summary As String, ByRef Skip As Boolean) As String Implements WikiFunctions.Plugin.IModule.ProcessArticle
             Skip = False
             Summary = ""test""
 
@@ -67,7 +51,4 @@ End Namespace";
             
             Return ArticleText
         End Function";
-            }
-        }
-    }
 }

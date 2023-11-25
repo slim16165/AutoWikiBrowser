@@ -21,40 +21,39 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.IO;
 
-namespace WikiFunctions.Plugins.ListMaker.TypoScan
+namespace WikiFunctions.Plugins.ListMaker.TypoScan;
+
+static class Common
 {
-    static class Common
+    /// <summary>
+    /// The URL, script and action=
+    /// </summary>
+    private const string Url = "https://awb.toolforge.org/typoscan/index.php?action=";
+
+    private static readonly Regex UrlRegex = new Regex(@"^https?://([-a-z0-9\.]+).*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    internal static string GetUrlFor(string action)
     {
-        /// <summary>
-        /// The URL, script and action=
-        /// </summary>
-        private const string Url = "https://awb.toolforge.org/typoscan/index.php?action=";
+        return Url + action + "&wiki=" + GetSite();
+    }
 
-        private static readonly Regex UrlRegex = new Regex(@"^https?://([-a-z0-9\.]+).*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        internal static string GetUrlFor(string action)
+    public static string CheckOperation(string xml)
+    {
+        using (XmlTextReader r = new XmlTextReader(new StringReader(xml)))
         {
-            return Url + action + "&wiki=" + GetSite();
+            if (!r.ReadToFollowing("operation"))
+                return "xml";
+
+            if (r.GetAttribute("status") == "success")
+                return null;
+
+            string s = r.GetAttribute("error");
+            return string.IsNullOrEmpty(s) ? r.ReadString() : s;
         }
+    }
 
-        public static string CheckOperation(string xml)
-        {
-            using (XmlTextReader r = new XmlTextReader(new StringReader(xml)))
-            {
-                if (!r.ReadToFollowing("operation"))
-                    return "xml";
-
-                if (r.GetAttribute("status") == "success")
-                    return null;
-
-                string s = r.GetAttribute("error");
-                return string.IsNullOrEmpty(s) ? r.ReadString() : s;
-            }
-        }
-
-        internal static string GetSite()
-        {
-            return UrlRegex.Replace(Variables.URLLong, "$1");
-        }
+    internal static string GetSite()
+    {
+        return UrlRegex.Replace(Variables.URLLong, "$1");
     }
 }

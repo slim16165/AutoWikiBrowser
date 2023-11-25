@@ -21,188 +21,185 @@ using System.Windows.Forms;
 using System.IO;
 using WikiFunctions;
 
-namespace AutoWikiBrowser
+namespace AutoWikiBrowser;
+
+public partial class ExternalProgram : Form, WikiFunctions.Plugin.IModule
 {
-    public partial class ExternalProgram : Form, WikiFunctions.Plugin.IModule
+    public ExternalProgram()
     {
-        public ExternalProgram()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
 
-        public bool ModuleEnabled
-        {
-            get { return chkEnabled.Checked; }
-            set { chkEnabled.Checked = value; }
-        }
+    public bool ModuleEnabled
+    {
+        get => chkEnabled.Checked;
+        set => chkEnabled.Checked = value;
+    }
 
-        public WikiFunctions.AWBSettings.ExternalProgramPrefs Settings
-        {
-            get
+    public WikiFunctions.AWBSettings.ExternalProgramPrefs Settings
+    {
+        get =>
+            new()
             {
-                return new WikiFunctions.AWBSettings.ExternalProgramPrefs
+                Enabled = chkEnabled.Checked,
+                Skip = chkSkip.Checked,
+                Program = txtProgram.Text,
+                Parameters = txtParameters.Text,
+                PassAsFile = radFile.Checked,
+                OutputFile = txtFile.Text
+            };
+        set
+        {
+            chkEnabled.Checked = value.Enabled;
+            chkSkip.Checked = value.Skip;
+            txtProgram.Text = value.Program;
+            txtParameters.Text = value.Parameters;
+
+            radFile.Checked = value.PassAsFile;
+            radParameter.Checked = !value.PassAsFile;
+            txtFile.Text = value.OutputFile;
+        }
+    }
+
+    private void chkEnabled_CheckedChanged(object sender, EventArgs e)
+    {
+        groupBox1.Enabled = chkSkip.Enabled = chkEnabled.Checked;
+    }
+
+    // Look at User:Pseudomonas/AWBPerlWrapperPlugin
+    public string ProcessArticle(string articleText, string articleTitle, int @namespace, out string summary, out bool skip)
+    {
+        string origText = articleText;
+        skip = false;
+        summary = "";
+
+        string ioFile = txtFile.Text;
+
+        try
+        {
+            // under Wine WaitForExit() does not work and need to use absolute file paths. So under Linux use StandardOutput.ReadToEnd instead
+            if(Globals.UsingLinux)
+            {
+                using (System.Diagnostics.Process p = new System.Diagnostics.Process())
                 {
-                    Enabled = chkEnabled.Checked,
-                    Skip = chkSkip.Checked,
-                    Program = txtProgram.Text,
-                    Parameters = txtParameters.Text,
-                    PassAsFile = radFile.Checked,
-                    OutputFile = txtFile.Text
+                    p.StartInfo.FileName = txtProgram.Text;
+                    p.StartInfo.Arguments = Tools.ApplyKeyWords(articleTitle, txtParameters.Text.Replace("%%file%%", txtFile.Text));
+                    p.StartInfo.UseShellExecute = false;
+                    p.StartInfo.RedirectStandardOutput = true;
+
+                    if (radFile.Checked)
+                        Tools.WriteTextFileAbsolutePath(articleText, ioFile, false);
+                    else
+                        p.StartInfo.Arguments = p.StartInfo.Arguments.Replace("%%articletext%%", articleText);
+
+                    p.Start();
+
+                    string output = p.StandardOutput.ReadToEnd();
+
+                    p.Close();
+
+                    // pretend to do something with output just to keep compiler happy
+                    Tools.WriteDebug("Ext Proc", output);
+                }
+            }
+            else
+            {
+                System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    WorkingDirectory = Path.GetDirectoryName(txtProgram.Text),
+                    FileName = Path.GetFileName(txtProgram.Text),
+                    Arguments = Tools.ApplyKeyWords(articleTitle, txtParameters.Text.Replace("%%file%%", txtFile.Text))
                 };
-            }
-            set
-            {
-                chkEnabled.Checked = value.Enabled;
-                chkSkip.Checked = value.Skip;
-                txtProgram.Text = value.Program;
-                txtParameters.Text = value.Parameters;
-
-                radFile.Checked = value.PassAsFile;
-                radParameter.Checked = !value.PassAsFile;
-                txtFile.Text = value.OutputFile;
-            }
-        }
-
-        private void chkEnabled_CheckedChanged(object sender, EventArgs e)
-        {
-            groupBox1.Enabled = chkSkip.Enabled = chkEnabled.Checked;
-        }
-
-        // Look at User:Pseudomonas/AWBPerlWrapperPlugin
-        public string ProcessArticle(string articleText, string articleTitle, int @namespace, out string summary, out bool skip)
-        {
-            string origText = articleText;
-            skip = false;
-            summary = "";
-
-            string ioFile = txtFile.Text;
-
-            try
-            {
-                // under Wine WaitForExit() does not work and need to use absolute file paths. So under Linux use StandardOutput.ReadToEnd instead
-                if(Globals.UsingLinux)
+    
+                if (radFile.Checked)
                 {
-                    using (System.Diagnostics.Process p = new System.Diagnostics.Process())
-                    {
-                        p.StartInfo.FileName = txtProgram.Text;
-                        p.StartInfo.Arguments = Tools.ApplyKeyWords(articleTitle, txtParameters.Text.Replace("%%file%%", txtFile.Text));
-                        p.StartInfo.UseShellExecute = false;
-                        p.StartInfo.RedirectStandardOutput = true;
-
-                        if (radFile.Checked)
-                            Tools.WriteTextFileAbsolutePath(articleText, ioFile, false);
-                        else
-                            p.StartInfo.Arguments = p.StartInfo.Arguments.Replace("%%articletext%%", articleText);
-
-                        p.Start();
-
-                        string output = p.StandardOutput.ReadToEnd();
-
-                        p.Close();
-
-                        // pretend to do something with output just to keep compiler happy
-                        Tools.WriteDebug("Ext Proc", output);
-                    }
+                    if (txtFile.Text.Contains("\\"))
+                        Tools.WriteTextFileAbsolutePath(articleText, ioFile, false);
+                    else
+                        Tools.WriteTextFile(articleText, ioFile, false);
                 }
                 else
-                {
-                    System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo
-                                                                  {
-                                                                      WorkingDirectory = Path.GetDirectoryName(txtProgram.Text),
-                                                                      FileName = Path.GetFileName(txtProgram.Text),
-                                                                      Arguments = Tools.ApplyKeyWords(articleTitle, txtParameters.Text.Replace("%%file%%", txtFile.Text))
-                                                                  };
+                    psi.Arguments = psi.Arguments.Replace("%%articletext%%", articleText);
     
-                    if (radFile.Checked)
-                    {
-                        if (txtFile.Text.Contains("\\"))
-                            Tools.WriteTextFileAbsolutePath(articleText, ioFile, false);
-                        else
-                            Tools.WriteTextFile(articleText, ioFile, false);
-                    }
-                    else
-                        psi.Arguments = psi.Arguments.Replace("%%articletext%%", articleText);
+                System.Diagnostics.Process p = System.Diagnostics.Process.Start(psi);
     
-                    System.Diagnostics.Process p = System.Diagnostics.Process.Start(psi);
-    
-                    p.WaitForExit();
-                }
-
-                if (File.Exists(ioFile))
-                {
-                    articleText = File.ReadAllText(ioFile);
-
-                    skip = (chkSkip.Checked && (articleText == origText));
-
-                    File.Delete(ioFile);
-                }
-                return articleText;
+                p.WaitForExit();
             }
-            catch (Exception ex)
+
+            if (File.Exists(ioFile))
             {
-                Tools.WriteDebug("Ext Proc", ex.StackTrace);
-                // Most, if not all exceptions here are related to user wrong user input
-                // or environment specifics, so ErrorHandler is not needed.
-                MessageBox.Show(ActiveForm, ex.Message, "External processing error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                articleText = File.ReadAllText(ioFile);
 
-                return origText;
+                skip = (chkSkip.Checked && (articleText == origText));
+
+                File.Delete(ioFile);
             }
+            return articleText;
         }
-
-        private void ExternalProgram_Load(object sender, EventArgs e)
+        catch (Exception ex)
         {
-            groupBox1.Enabled = chkSkip.Enabled = chkEnabled.Checked;
-            WikiFunctions.Controls.AWBToolTip tip = new WikiFunctions.Controls.AWBToolTip();
+            Tools.WriteDebug("Ext Proc", ex.StackTrace);
+            // Most, if not all exceptions here are related to user wrong user input
+            // or environment specifics, so ErrorHandler is not needed.
+            MessageBox.Show(ActiveForm, ex.Message, "External processing error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-            string tooltip = "If you need a parameter of the actual article text, please use \"%%articletext%%\". If you want to use the value of the Input/Output file, please use \"%%file%%\"";
-            tip.SetToolTip(txtParameters, tooltip);
-            tip.SetToolTip(radParameter, tooltip);
-
-            tooltip = "This is the file that AWB will output to if necessary, and also the file it will try and read back in";
-            tip.SetToolTip(txtFile, tooltip);
-            tip.SetToolTip(label4, tooltip);
+            return origText;
         }
+    }
 
-        private void btnOk_Click(object sender, EventArgs e)
+    private void ExternalProgram_Load(object sender, EventArgs e)
+    {
+        groupBox1.Enabled = chkSkip.Enabled = chkEnabled.Checked;
+        WikiFunctions.Controls.AWBToolTip tip = new WikiFunctions.Controls.AWBToolTip();
+
+        string tooltip = "If you need a parameter of the actual article text, please use \"%%articletext%%\". If you want to use the value of the Input/Output file, please use \"%%file%%\"";
+        tip.SetToolTip(txtParameters, tooltip);
+        tip.SetToolTip(radParameter, tooltip);
+
+        tooltip = "This is the file that AWB will output to if necessary, and also the file it will try and read back in";
+        tip.SetToolTip(txtFile, tooltip);
+        tip.SetToolTip(label4, tooltip);
+    }
+
+    private void btnOk_Click(object sender, EventArgs e)
+    {
+        if (!chkEnabled.Checked || !string.IsNullOrEmpty(txtProgram.Text) && !string.IsNullOrEmpty(txtFile.Text) || (radParameter.Checked && !string.IsNullOrEmpty(txtParameters.Text)))
+            Close();
+        else
+            MessageBox.Show("Please make sure all relevant fields are completed");
+    }
+
+    private void ExternalProgram_FormClosing(object sender, FormClosingEventArgs e)
+    {
+        e.Cancel = true;
+        Hide();
+    }
+
+    private void btnSelectProgram_Click(object sender, EventArgs e)
+    {
+        if (string.IsNullOrEmpty(openProgram.InitialDirectory))
+            openProgram.InitialDirectory = Application.StartupPath;
+
+        if (openProgram.ShowDialog() == DialogResult.OK)
         {
-            if (!chkEnabled.Checked || !string.IsNullOrEmpty(txtProgram.Text) && !string.IsNullOrEmpty(txtFile.Text) || (radParameter.Checked && !string.IsNullOrEmpty(txtParameters.Text)))
-                Close();
-            else
-                MessageBox.Show("Please make sure all relevant fields are completed");
+            txtProgram.Text = openProgram.FileName;
         }
+    }
 
-        private void ExternalProgram_FormClosing(object sender, FormClosingEventArgs e)
+    private void btnSelectIO_Click(object sender, EventArgs e)
+    {
+        if (string.IsNullOrEmpty(openIO.InitialDirectory))
+            openIO.InitialDirectory = Application.StartupPath;
+
+        if (openIO.ShowDialog() == DialogResult.OK)
         {
-            e.Cancel = true;
-            Hide();
+            txtFile.Text = openIO.FileName;
         }
+    }
 
-        private void btnSelectProgram_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(openProgram.InitialDirectory))
-                openProgram.InitialDirectory = Application.StartupPath;
-
-            if (openProgram.ShowDialog() == DialogResult.OK)
-            {
-                txtProgram.Text = openProgram.FileName;
-            }
-        }
-
-        private void btnSelectIO_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(openIO.InitialDirectory))
-                openIO.InitialDirectory = Application.StartupPath;
-
-            if (openIO.ShowDialog() == DialogResult.OK)
-            {
-                txtFile.Text = openIO.FileName;
-            }
-        }
-
-        private void RadioButtonCheckedChanged(object sender, EventArgs e)
-        {
-            btnSelectIO.Enabled = txtFile.Enabled = radFile.Checked;
-        }
+    private void RadioButtonCheckedChanged(object sender, EventArgs e)
+    {
+        btnSelectIO.Enabled = txtFile.Enabled = radFile.Checked;
     }
 }

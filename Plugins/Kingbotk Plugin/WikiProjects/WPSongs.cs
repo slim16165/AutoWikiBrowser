@@ -13,108 +13,95 @@ You should have received a copy of the GNU General Public License Version 2 alon
 using System.Windows.Forms;
 using System.Xml;
 
-namespace AutoWikiBrowser.Plugins.Kingbotk.WikiProjects
+namespace AutoWikiBrowser.Plugins.Kingbotk.WikiProjects;
+
+internal sealed class WPSongs : PluginBase
 {
-    internal sealed class WPSongs : PluginBase
+    private const string Prefix = "Songs";
+
+    private const string PluginName = "WikiProject Songs";
+
+    internal WPSongs() : base("WikiProjectSongs|WP Songs|Song|Songs|WPSongs|WikiProject Song")
     {
-        private const string Prefix = "Songs";
+        // Specify alternate names only
 
-        private const string PluginName = "WikiProject Songs";
+        TemplateParameters[] @params = new TemplateParameters[-1 + 1];
 
-        internal WPSongs() : base("WikiProjectSongs|WP Songs|Song|Songs|WPSongs|WikiProject Song")
-        {
-            // Specify alternate names only
+        _ourSettingsControl = new GenericWithWorkgroups(PluginName, Prefix, true, @params);
+    }
 
-            TemplateParameters[] @params = new TemplateParameters[-1 + 1];
+    // Settings:
+    private readonly TabPage _ourTab = new TabPage(Prefix);
 
-            _ourSettingsControl = new GenericWithWorkgroups(PluginName, Prefix, true, @params);
-        }
+    private readonly GenericWithWorkgroups _ourSettingsControl;
 
-        // Settings:
-        private readonly TabPage _ourTab = new TabPage(Prefix);
+    protected internal override string PluginShortName => Prefix;
 
-        private readonly GenericWithWorkgroups _ourSettingsControl;
+    protected override string PreferredTemplateName => PluginName;
 
-        protected internal override string PluginShortName
-        {
-            get { return Prefix; }
-        }
+    protected internal override IGenericSettings GenericSettings => _ourSettingsControl;
 
-        protected override string PreferredTemplateName
-        {
-            get { return PluginName; }
-        }
+    // Initialisation:
 
-        protected internal override IGenericSettings GenericSettings
-        {
-            get { return _ourSettingsControl; }
-        }
+    protected internal override void Initialise()
+    {
+        OurMenuItem = new ToolStripMenuItem("Songs Plugin");
+        InitialiseBase();
+        // must set menu item object first
+        _ourTab.UseVisualStyleBackColor = true;
+        _ourTab.Controls.Add(_ourSettingsControl);
+    }
 
-        // Initialisation:
+    // Article processing:
+    protected override bool SkipIfContains()
+    {
+        return false;
+    }
 
-        protected internal override void Initialise()
-        {
-            OurMenuItem = new ToolStripMenuItem("Songs Plugin");
-            InitialiseBase();
-            // must set menu item object first
-            _ourTab.UseVisualStyleBackColor = true;
-            _ourTab.Controls.Add(_ourSettingsControl);
-        }
+    protected override void ProcessArticleFinish()
+    {
+        StubClass();
+    }
 
-        // Article processing:
-        protected override bool SkipIfContains()
-        {
-            return false;
-        }
+    protected override bool TemplateFound()
+    {
+        // Nothing to do here
+        return false;
+    }
 
-        protected override void ProcessArticleFinish()
-        {
-            StubClass();
-        }
+    protected override string WriteTemplateHeader()
+    {
+        return "{{" + PluginName + WriteOutParameterToHeader("class");
+    }
 
-        protected override bool TemplateFound()
-        {
-            // Nothing to do here
-            return false;
-        }
+    // User interface:
+    protected override void ShowHideOurObjects(bool visible)
+    {
+        PluginManager.ShowHidePluginTab(_ourTab, visible);
+    }
 
-        protected override string WriteTemplateHeader()
-        {
-            return "{{" + PluginName + WriteOutParameterToHeader("class");
-        }
+    // XML settings:
+    protected internal override void ReadXML(XmlTextReader reader)
+    {
+        Enabled = PluginManager.XMLReadBoolean(reader, Prefix + "Enabled", Enabled);
+        _ourSettingsControl.ReadXML(reader);
+    }
 
-        // User interface:
-        protected override void ShowHideOurObjects(bool visible)
-        {
-            PluginManager.ShowHidePluginTab(_ourTab, visible);
-        }
+    protected internal override void Reset()
+    {
+        _ourSettingsControl.Reset();
+    }
 
-        // XML settings:
-        protected internal override void ReadXML(XmlTextReader reader)
-        {
-            Enabled = PluginManager.XMLReadBoolean(reader, Prefix + "Enabled", Enabled);
-            _ourSettingsControl.ReadXML(reader);
-        }
+    protected internal override void WriteXML(XmlTextWriter writer)
+    {
+        writer.WriteAttributeString(Prefix + "Enabled", Enabled.ToString());
+        _ourSettingsControl.WriteXML(writer);
+    }
 
-        protected internal override void Reset()
-        {
-            _ourSettingsControl.Reset();
-        }
+    // Misc:
+    internal override bool HasReqPhotoParam => false;
 
-        protected internal override void WriteXML(XmlTextWriter writer)
-        {
-            writer.WriteAttributeString(Prefix + "Enabled", Enabled.ToString());
-            _ourSettingsControl.WriteXML(writer);
-        }
-
-        // Misc:
-        internal override bool HasReqPhotoParam
-        {
-            get { return false; }
-        }
-
-        internal override void ReqPhoto()
-        {
-        }
+    internal override void ReqPhoto()
+    {
     }
 }
