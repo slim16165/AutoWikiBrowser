@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   build-windows:
     name: Windows
-    runs-on: ${{ matrix.windows-version }}
+    runs-on: ${{ fromJSON(((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.pull_request.head.repo.full_name != github.repository) && format('["{0}"]', matrix.windows-version) || vars.CI_RUNNER_WINDOWS_JSON || format('["{0}"]', matrix.windows-version)) }}
     strategy:
       fail-fast: false
       matrix:
